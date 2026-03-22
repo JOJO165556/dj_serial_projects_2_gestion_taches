@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{% if task %}Modifier Tâche{% else %}Nouvelle Tâche{% endif %}{% endblock %}
+
+{% block content %}
+<h2>{% if task %}Modifier {{ task.title }}{% else %}Nouvelle Tâche{% endif %}</h2>
+<form method="post">
+    {% csrf_token %}
+    
+    <label>Projet associé</label>
+    <select name="project" required>
+        {% for p in projects %}
+            <option value="{{ p.id }}" {% if task and task.project.id == p.id %}selected{% endif %}>{{ p.name }}</option>
+        {% endfor %}
+    </select>
+    
+    <label>Titre de la tâche</label>
+    <input name="title" value="{{ task.title|default:'' }}" placeholder="Ex: Mettre à jour la base de données" required>
+    
+    <label>Description</label>
+    <textarea name="description" placeholder="Détails de ce qu'il faut accomplir..." required>{{ task.description|default:'' }}</textarea>
+    
+    <label>Assigné à</label>
+    <select name="assigned_to">
+        <option value="">-- Non assigné --</option>
+        {% for u in users %}
+            <option value="{{ u.id }}" {% if task and task.assigned_to and task.assigned_to.id == u.id %}selected{% endif %}>{{ u.username }}</option>
+        {% endfor %}
+    </select>
+
+    <label>Priorité</label>
+    <select name="priority">
+        <option value="low" {% if task and task.priority == 'low' %}selected{% endif %}>Basse</option>
+        <option value="medium" {% if not task or task.priority == 'medium' %}selected{% endif %}>Moyenne</option>
+        <option value="high" {% if task and task.priority == 'high' %}selected{% endif %}>Haute</option>
+    </select>
+
+    <label>Statut</label>
+    <select name="status">
+        <option value="todo" {% if not task or task.status == 'todo' %}selected{% endif %}>À faire</option>
+        <option value="doing" {% if task and task.status == 'doing' %}selected{% endif %}>En cours</option>
+        <option value="done" {% if task and task.status == 'done' %}selected{% endif %}>Terminé</option>
+    </select>
+
+    <div class="form-actions">
+        <button type="submit">{% if task %}Enregistrer les modifications{% else %}Créer la tâche{% endif %}</button>
+        <a href="{% if task %}{% url 'task_detail' task.id %}{% else %}{% url 'task_list' %}{% endif %}" class="btn btn-secondary" style="padding: 0.75rem; text-align: center; display: inline-block;">Annuler</a>
+    </div>
+</form>
+{% endblock %}

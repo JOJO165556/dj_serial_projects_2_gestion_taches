@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Profil de {{ user.username }}{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'project_list' %}" style="text-decoration: none;">&larr; Retour à l'accueil</a>
+</div>
+
+<div style="display: flex; justify-content: center; margin-top: 2rem;">
+    <div class="kanban-card" style="width: 100%; max-width: 400px; text-align: center; padding: 2.5rem 2rem;">
+        <!-- Avatar généré avec la 1ère lettre du pseudo -->
+        <div style="width: 90px; height: 90px; border-radius: 50%; background-color: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: bold; margin: 0 auto 1rem auto; text-transform: uppercase; box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);">
+            {{ user.username|make_list|first }}
+        </div>
+        
+        <h2 style="margin-bottom: 0.2rem; font-size: 1.5rem;">{{ user.username }}</h2>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">{{ user.email }}</p>
+        
+        <div style="margin-bottom: 2rem;">
+            <span class="badge badge-medium" style="font-size: 0.85rem; padding: 0.4rem 1rem;">
+                Rôle : <strong>{{ user.get_role_display }}</strong>
+            </span>
+        </div>
+
+        <a href="{% url 'profile_edit' %}" class="btn" style="width: 100%; display: block; padding: 0.8rem; font-size: 1rem;">Modifier mon profil</a>
+    </div>
+</div>
+{% endblock %}

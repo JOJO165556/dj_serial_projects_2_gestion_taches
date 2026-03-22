@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Projets{% endblock %}
+
+{% block content %}
+<h2>Projets</h2>
+<div style="margin-bottom: 1.5rem;">
+    {% if request.user.role != 'reader' %}
+        <a href="{% url 'project_create' %}" class="btn">Nouveau Projet</a>
+    {% endif %}
+    <a href="{% url 'task_list' %}" class="btn" style="background-color: #4b5563;">Voir toutes les tâches</a>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
+    {% for project in projects %}
+        <a href="{% url 'project_detail' project.id %}" style="text-decoration: none; color: inherit; display: block;">
+            <div class="kanban-card" style="height: 100%; transition: transform 0.2s, box-shadow 0.2s; padding: 1.5rem; border-left: 4px solid var(--accent);">
+                <h3 style="margin-top: 0; margin-bottom: 0.5rem; color: var(--accent); font-size: 1.25rem;">{{ project.name }}</h3>
+                
+                {% if project.description %}
+                    <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.4; margin-bottom: 1rem;">
+                        {{ project.description|truncatewords:12 }}
+                    </p>
+                {% else %}
+                    <p style="color: var(--text-muted); font-size: 0.9rem; font-style: italic; margin-bottom: 1rem;">
+                        (Aucune description)
+                    </p>
+                {% endif %}
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--text-muted);">
+                    <span><span style="font-weight: bold;">{{ project.tasks.count }}</span> tâche(s)</span>
+                    <span style="background-color: var(--background); padding: 0.2rem 0.6rem; border-radius: 12px; font-weight: 500;">
+                        {{ project.members.count }} membre(s)
+                    </span>
+                </div>
+            </div>
+        </a>
+    {% empty %}
+        <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; background-color: var(--surface); border-radius: var(--radius); border: 2px dashed var(--border-color);">
+            <p style="color: var(--text-muted); font-size: 1.1rem; margin-bottom: 0;">Aucun projet pour le moment. Créez-en un pour commencer !</p>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

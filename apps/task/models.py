@@ -3,6 +3,7 @@ from apps.project.models import Project
 from apps.users.models import User
 
 class Task(models.Model):
+    # Modèle Tâche
     title = models.CharField(max_length=150)
     description = models.TextField()
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="tasks")

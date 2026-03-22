@@ -1,6 +1,7 @@
 from apps.project.models import Project
 
 def create_project(name, description, owner, start_date):
+    # Créer projet
     project = Project.objects.create(
         name=name,
         description=description,
@@ -10,10 +11,12 @@ def create_project(name, description, owner, start_date):
     return project
 
 def add_member(project, user):
+    # Ajouter membre
     project.members.add(user)
     return project
 
 def deactivate_project(project):
+    # Désactiver projet
     project.is_active = False
     project.save()
     return project

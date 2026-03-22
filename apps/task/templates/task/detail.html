@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Tâche: {{ task.title }}{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'task_list' %}" style="text-decoration: none;">&larr; Retour aux tâches</a>
+</div>
+
+<h2>{{ task.title }}</h2>
+<p>{{ task.description }}</p>
+<p>Status: {{ task.status }}</p>
+
+{% if request.user.role != 'reader' %}
+<div style="margin-top: 1.5rem; margin-bottom: 2rem;">
+    <a href="{% url 'task_edit' task.id %}" class="btn">Modifier cette tâche</a>
+</div>
+{% endif %}
+{% endblock %}

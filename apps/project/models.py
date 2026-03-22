@@ -3,6 +3,7 @@ from apps.users.models import User
 import uuid
 
 class Project(models.Model):
+    # Modèle Projet
     name = models.CharField(max_length=60)
     description = models.TextField()
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="owned_projects")

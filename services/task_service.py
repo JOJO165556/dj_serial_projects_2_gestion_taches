@@ -1,6 +1,7 @@
 from apps.task.models import Task
 
 def create_task(project, title, description, priority="medium"):
+    # Créer tâche
     return Task.objects.create(
         project=project,
         title=title,
@@ -9,11 +10,13 @@ def create_task(project, title, description, priority="medium"):
     )
     
 def assign_task(task, user):
+    # Assigner tâche
     task.assigned_to = user
     task.save()
     return task
 
 def change_status(task, status):
+    # Changer statut
     if task.status == status:
         return task
     

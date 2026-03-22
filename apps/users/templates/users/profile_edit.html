@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier Profil{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'profile' %}" style="text-decoration: none;">&larr; Retour au profil</a>
+</div>
+
+<h2>Modifier Profil</h2>
+
+<form method="post">
+    {% csrf_token %}
+
+    <label>Nom d'utilisateur</label>
+    <input name="username" value="{{ user.username }}" placeholder="Pseudo" required>
+    
+    <label>Adresse email</label>
+    <input name="email" type="email" value="{{ user.email }}" placeholder="votre@email.com" required>
+    
+    <label>Nouveau mot de passe (optionnel)</label>
+    <input name="password" type="password" placeholder="Laissez vide pour conserver l'actuel">
+
+    <div class="form-actions">
+        <button type="submit">Enregistrer</button>
+        <a href="{% url 'profile' %}" class="btn btn-secondary" style="padding: 0.75rem; text-align: center; display: inline-block;">Annuler</a>
+    </div>
+</form>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Tâches{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'project_list' %}" style="text-decoration: none;">&larr; Retour aux projets</a>
+</div>
+
+<h2>Tâches</h2>
+<div style="margin-bottom: 1.5rem;">
+    {% if request.user.role != 'reader' %}
+        <a href="{% url 'task_create' %}" class="btn">Nouvelle Tâche</a>
+    {% endif %}
+</div>
+
+<div class="kanban-board" style="margin-top: 0;">
+    <!-- À faire -->
+    <div class="kanban-column">
+        <h3>À faire</h3>
+        {% for task in tasks %}
+            {% if task.status == 'todo' %}
+                <a href="{% url 'task_detail' task.id %}" class="kanban-card">
+                    <p style="margin-bottom: 0.2rem; font-size: 0.8rem; text-transform: uppercase;">{{ task.project.name }}</p>
+                    <h4>{{ task.title }}</h4>
+                    <span class="badge badge-{{ task.priority }}">
+                        {% if task.priority == 'high' %}Haute{% elif task.priority == 'medium' %}Moyenne{% else %}Basse{% endif %}
+                    </span>
+                </a>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <!-- En cours -->
+    <div class="kanban-column">
+        <h3>En cours</h3>
+        {% for task in tasks %}
+            {% if task.status == 'doing' %}
+                <a href="{% url 'task_detail' task.id %}" class="kanban-card">
+                    <p style="margin-bottom: 0.2rem; font-size: 0.8rem; text-transform: uppercase;">{{ task.project.name }}</p>
+                    <h4>{{ task.title }}</h4>
+                    <span class="badge badge-{{ task.priority }}">
+                        {% if task.priority == 'high' %}Haute{% elif task.priority == 'medium' %}Moyenne{% else %}Basse{% endif %}
+                    </span>
+                </a>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <!-- Terminé -->
+    <div class="kanban-column">
+        <h3>Terminé</h3>
+        {% for task in tasks %}
+            {% if task.status == 'done' %}
+                <a href="{% url 'task_detail' task.id %}" class="kanban-card">
+                    <p style="margin-bottom: 0.2rem; font-size: 0.8rem; text-transform: uppercase;">{{ task.project.name }}</p>
+                    <h4>{{ task.title }}</h4>
+                    <span class="badge badge-{{ task.priority }}">
+                        {% if task.priority == 'high' %}Haute{% elif task.priority == 'medium' %}Moyenne{% else %}Basse{% endif %}
+                    </span>
+                </a>
+            {% endif %}
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

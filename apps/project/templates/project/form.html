@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{% if project %}Modifier Projet{% else %}Nouveau Projet{% endif %}{% endblock %}
+
+{% block content %}
+<h2>{% if project %}Modifier {{ project.name }}{% else %}Nouveau Projet{% endif %}</h2>
+<form method="post">
+    {% csrf_token %}
+    
+    <label>Nom du projet</label>
+    <input name="name" value="{{ project.name|default:'' }}" placeholder="Ex: Refonte du site web" required>
+    
+    <label>Description</label>
+    <textarea name="description" placeholder="Objectifs et détails du projet..." required>{{ project.description|default:'' }}</textarea>
+    
+    <label>Membres <small style="font-weight:normal; color:var(--text-muted);">(Maintenez Ctrl/Cmd pour sélectionner plusieurs membres)</small></label>
+    <select name="members" multiple style="min-height: 120px;">
+        {% for u in users %}
+            <option value="{{ u.id }}" {% if project and u in project.members.all %}selected{% endif %}>{{ u.username }}</option>
+        {% endfor %}
+    </select>
+    
+    <div class="form-actions">
+        <button type="submit">{% if project %}Enregistrer les modifications{% else %}Créer le projet{% endif %}</button>
+        <a href="{% if project %}{% url 'project_detail' project.id %}{% else %}{% url 'project_list' %}{% endif %}" class="btn btn-secondary" style="padding: 0.75rem; text-align: center; display: inline-block;">Annuler</a>
+    </div>
+</form>
+{% endblock %}
