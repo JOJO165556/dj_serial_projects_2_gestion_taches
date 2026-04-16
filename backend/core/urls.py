@@ -5,7 +5,7 @@ from api.routers import router
 urlpatterns = [
     path("", include("apps.users.urls")),
     path('admin/', admin.site.urls),
-    path('api/', include(router.urls)),
+    path('api/', include("api.urls")),
     path("projects/", include("apps.project.urls")),
     path("tasks/", include("apps.task.urls")),
 ]

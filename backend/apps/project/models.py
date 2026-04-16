@@ -1,6 +1,5 @@
 from django.db import models
 from apps.users.models import User
-import uuid
 
 class Project(models.Model):
     # Modèle Projet

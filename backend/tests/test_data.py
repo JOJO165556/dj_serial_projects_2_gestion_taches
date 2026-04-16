@@ -1,16 +1,14 @@
 import os
 import django
 from django.utils import timezone
-from datetime import timedelta
 
 # Configuration de l'environnement Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
 django.setup()
 
-from apps.users.models import User
-from services.user_service import create_user
-from services.project_service import create_project, add_member
-from services.task_service import create_task
+from backend.apps.users.models import User
+from backend.services.project_service import create_project, add_member
+from backend.services.task_service import create_task
 
 def populate():
     print("Création d'utilisateurs de test...")
