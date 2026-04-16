@@ -18,7 +18,7 @@ def register_view(request):
         
         return redirect("login")
     
-    return render(request, "users/register.html")
+    return render(request, "users/templates/users/register.html")
 
 def login_view(request):
     # Connexion
@@ -36,7 +36,7 @@ def login_view(request):
             login(request, user)
             return redirect("project_list")
         
-    return render(request, "users/login.html")
+    return render(request, "users/templates/users/login.html")
 
 def logout_view(request):
     # Déconnexion
@@ -46,7 +46,7 @@ def logout_view(request):
 @login_required
 def profile_view(request):
     # Affichage profil
-    return render(request, "users/profile.html", {"user": request.user})
+    return render(request, "users/templates/users/profile.html", {"user": request.user})
 
 @login_required
 def profile_edit(request):
@@ -57,4 +57,4 @@ def profile_edit(request):
         update_user(user, request.POST)
         return redirect("profile")
     
-    return render(request, "users/profile_edit.html", {"user": user})
+    return render(request, "users/templates/users/profile_edit.html", {"user": user})

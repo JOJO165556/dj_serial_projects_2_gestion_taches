@@ -7,5 +7,3 @@ router = DefaultRouter()
 router.register(r"tasks", TaskViewSet)
 router.register(r"projects", ProjectViewSet)
 router.register(r"users", UserViewSet)
-
-urlpatterns = router.urls
