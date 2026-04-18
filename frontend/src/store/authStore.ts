@@ -1,0 +1,45 @@
+import { defineStore } from "pinia";
+import { login, getMe } from "../services/authService";
+import type { User } from "../types/auth";
+
+export const useAuthStore = defineStore("auth", {
+    state: () => ({
+        user: null as User | null,
+        isAuthenticated: false,
+        isLoading: true,
+        error: null as string | null,
+    }),
+
+    actions: {
+        async loginUser(credentials: { username: string; password: string }) {
+            try {
+                this.error = null;
+
+                await login(credentials);
+                await this.fetchUser();
+            } catch (err: any) {
+                this.error = "Identifiants invalides";
+            }
+        },
+
+        async fetchUser() {
+            try {
+                const user = await getMe();
+                this.user = user;
+                this.isAuthenticated = true;
+            } catch {
+                this.logout();
+            } finally {
+                this.isLoading = false;
+            }
+        },
+
+        logout() {
+            localStorage.removeItem("access");
+            localStorage.removeItem("refresh");
+
+            this.user = null;
+            this.isAuthenticated = false;
+        },
+    },
+});
