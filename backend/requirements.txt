@@ -11,6 +11,7 @@ django-cors-headers==4.3.1
 django-unfold==0.85.0
 djangorestframework==3.16.1
 djangorestframework-simplejwt==5.3.1
+drf-spectacular==0.28.0
 dotenv==0.9.9
 executing==2.2.1
 ipython==9.11.0
