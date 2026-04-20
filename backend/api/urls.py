@@ -17,7 +17,11 @@ TokenRefreshView = extend_schema(
     tags=["Authentification"],
 )(TokenRefreshView)
 
+from api.views.task_views import reorder_tasks
+
 urlpatterns = [
+    path("tasks/reorder/", reorder_tasks, name="reorder_tasks"),
+
     # Routes des apps via router
     path("", include(router.urls)),
 
@@ -27,4 +31,4 @@ urlpatterns = [
     path("auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("auth/me/", MeView.as_view(), name="me"),
     path("auth/logout/", LogoutView.as_view(), name="logout"),
-]
+]

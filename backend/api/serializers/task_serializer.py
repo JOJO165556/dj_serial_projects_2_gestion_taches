@@ -33,10 +33,18 @@ class TaskSerializer(serializers.ModelSerializer):
             "description",
             "project",
             "column",
+            "position",
             "assigned_to",
             "priority",
             "due_date",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["created_at", "updated_at"]
+        read_only_fields = ["created_at", "updated_at"]
+
+class TaskReorderItemSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    position = serializers.IntegerField()
+
+class TaskReorderSerializer(serializers.Serializer):
+    tasks = TaskReorderItemSerializer(many=True)
