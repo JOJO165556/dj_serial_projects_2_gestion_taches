@@ -51,9 +51,13 @@ class Task(models.Model):
     priority = models.CharField(
         max_length=10, choices=PRIORITY_CHOICES, default="medium"
     )
+    position = models.PositiveIntegerField(default=0)
     due_date = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['position']
 
     def __str__(self):
         return self.title
