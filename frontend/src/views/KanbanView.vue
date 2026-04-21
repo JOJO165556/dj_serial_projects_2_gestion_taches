@@ -4,19 +4,43 @@ import draggable from "vuedraggable";
 import { getProjects, updateTask, reorderTasks } from "@/services/kanbanService";
 
 const projects = ref<any[]>([]);
+let ws: WebSocket;
 
-onMounted(async () => {
+const fetchProjects = async () => {
   const res = await getProjects();
   projects.value = res.data;
+};
+
+onMounted(() => {
+  fetchProjects();
+
+  // Connexion WebSocket
+  ws = new WebSocket("ws://localhost:8000/ws/kanban/");
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === 'update') {
+      fetchProjects();
+    }
+  };
 });
 
 const onChange = async (event: any, columnId: number) => {
   if (event.added) {
     const task = event.added.element;
+    
+    // Sauvegarde de l'état pour rollback
+    const previousState = JSON.parse(JSON.stringify(projects.value));
 
-    await updateTask(task.id, {
-      column: columnId,
-    });
+    try {
+      await updateTask(task.id, {
+        column: columnId,
+      });
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour de la colonne:", error);
+      // Rollback
+      projects.value = previousState;
+      alert("Erreur lors de la mise à jour. Annulation.");
+    }
   }
 };
 
@@ -25,13 +49,20 @@ const onDragEnd = async (column: any) => {
 
   const updatedTasks = column.tasks.map((task: any, index: number) => ({
     id: task.id,
-    position: index
+    position: index,
+    column_id: column.id
   }));
+
+  // Sauvegarde de l'état pour rollback
+  const previousState = JSON.parse(JSON.stringify(projects.value));
 
   try {
     await reorderTasks({ tasks: updatedTasks });
   } catch (error) {
     console.error("Erreur lors de la réorganisation des tâches:", error);
+    // Rollback
+    projects.value = previousState;
+    alert("Erreur lors de la réorganisation. Annulation.");
   }
 };
 </script>

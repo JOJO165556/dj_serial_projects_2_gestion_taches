@@ -45,6 +45,7 @@ class TaskSerializer(serializers.ModelSerializer):
 class TaskReorderItemSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     position = serializers.IntegerField()
+    column_id = serializers.IntegerField(required=False, allow_null=True)
 
 class TaskReorderSerializer(serializers.Serializer):
     tasks = TaskReorderItemSerializer(many=True)
