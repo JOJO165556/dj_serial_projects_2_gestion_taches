@@ -75,6 +75,18 @@ class TaskViewSet(ModelViewSet):
 
         serializer.save()
 
+        # Notifier via Channels
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            'kanban_updates',
+            {
+                'type': 'kanban_update',
+                'message': 'task_updated'
+            }
+        )
+
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 
@@ -91,25 +103,53 @@ def reorder_tasks(request):
     
     # Vérifier que toutes les tâches existent
     tasks = Task.objects.filter(id__in=task_ids)
-    if tasks.count() != len(tasks_data):
+    task_map = {task.id: task for task in tasks}
+    
+    if len(task_map) != len(tasks_data):
         return Response(
             {"error": "Certaines tâches n'existent pas."}, 
             status=status.HTTP_404_NOT_FOUND
         )
 
-    # Vérifier les permissions pour chaque tâche
+    # Vérifier les permissions pour chaque tâche et préparer la mise à jour
     permission = IsTaskAllowed()
-    for task in tasks:
+    tasks_to_update = []
+    
+    for task_data in tasks_data:
+        task = task_map[task_data['id']]
         if not permission.has_object_permission(request, None, task):
             return Response(
                 {"error": f"Permission refusée pour la tâche {task.id}"}, 
                 status=status.HTTP_403_FORBIDDEN
             )
+        
+        task.position = task_data['position']
+        if 'column_id' in task_data and task_data['column_id'] is not None:
+            task.column_id = task_data['column_id']
+        
+        tasks_to_update.append(task)
 
-    with transaction.atomic():
-        for task_data in tasks_data:
-            Task.objects.filter(id=task_data['id']).update(
-                position=task_data['position']
+    try:
+        with transaction.atomic():
+            Task.objects.bulk_update(tasks_to_update, ['position', 'column_id'])
+            
+            # Notifier via Channels
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                'kanban_updates',
+                {
+                    'type': 'kanban_update',
+                    'message': 'tasks_reordered'
+                }
             )
+            
+    except Exception as e:
+        # En cas d'erreur BD, transaction.atomic() fera un rollback automatiquement
+        return Response(
+            {"error": f"Erreur lors de la mise à jour : {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
     return Response({"message": "Tasks reordered"})

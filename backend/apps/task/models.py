@@ -16,6 +16,11 @@ class Column(models.Model):
 
     class Meta:
         ordering = ["order"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["project", "name"], name="unique_column_name_per_project"
+            )
+        ]
 
     def __str__(self):
         return f"{self.project.name} — {self.name}"
