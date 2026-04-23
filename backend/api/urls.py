@@ -18,9 +18,11 @@ TokenRefreshView = extend_schema(
 )(TokenRefreshView)
 
 from api.views.task_views import reorder_tasks
+from api.views.project_views import ProjectInvitationView
 
 urlpatterns = [
     path("tasks/reorder/", reorder_tasks, name="reorder_tasks"),
+    path("projects/invitations/<uuid:token>/", ProjectInvitationView.as_view(), name="project_invitation"),
 
     # Routes des apps via router
     path("", include(router.urls)),
