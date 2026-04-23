@@ -3,7 +3,8 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 
 class KanbanConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.group_name = 'kanban_updates'
+        self.project_id = self.scope['url_route']['kwargs']['project_id']
+        self.group_name = f'kanban_updates_{self.project_id}'
 
         # Rejoindre le groupe de diffusion
         await self.channel_layer.group_add(
@@ -22,10 +23,15 @@ class KanbanConsumer(AsyncWebsocketConsumer):
 
     # Recevoir un message depuis le groupe WebSocket
     async def kanban_update(self, event):
-        message = event['message']
+        message = event.get('message', '')
+        board_data = event.get('board_data', None)
 
         # Envoyer le message au WebSocket (client)
-        await self.send(text_data=json.dumps({
-            'type': 'update',
-            'message': message
-        }))
+        payload = {
+            'type': 'update_board',
+            'message': message,
+        }
+        if board_data:
+            payload['board_data'] = board_data
+            
+        await self.send(text_data=json.dumps(payload))

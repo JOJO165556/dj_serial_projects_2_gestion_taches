@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
+from django.views.generic import RedirectView
 from api.routers import router
 from drf_spectacular.views import (
     SpectacularAPIView,
@@ -8,9 +9,14 @@ from drf_spectacular.views import (
 )
 
 urlpatterns = [
-    path("", include("apps.users.urls")),
+    # Redirection racine vers Vue.js (dev: 5173, prod: adapter)
+    path("", RedirectView.as_view(url="http://localhost:5173/", permanent=False)),
+
     path("admin/", admin.site.urls),
     path("api/", include("api.urls")),
+
+    # Routes template Django conservees pour l'historique
+    path("users/", include("apps.users.urls")),
     path("projects/", include("apps.project.urls")),
     path("tasks/", include("apps.task.urls")),
 

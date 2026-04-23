@@ -1,6 +1,14 @@
 import api from "../api/axios";
 import type { TokenResponse, User } from "../types/auth";
 
+export const register = async (data: {
+    username: string;
+    email: string;
+    password: string;
+}): Promise<void> => {
+    await api.post("auth/register/", data);
+};
+
 export const login = async (data: {
     username: string,
     password: string,
