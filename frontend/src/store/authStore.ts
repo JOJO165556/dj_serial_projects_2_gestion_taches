@@ -11,10 +11,19 @@ export const useAuthStore = defineStore("auth", {
     }),
 
     actions: {
+        // Appele au demarrage de l'app pour restaurer la session
+        async init() {
+            const token = localStorage.getItem("access");
+            if (!token) {
+                this.isLoading = false;
+                return;
+            }
+            await this.fetchUser();
+        },
+
         async loginUser(credentials: { username: string; password: string }) {
             try {
                 this.error = null;
-
                 await login(credentials);
                 await this.fetchUser();
             } catch (err: any) {
@@ -37,9 +46,9 @@ export const useAuthStore = defineStore("auth", {
         logout() {
             localStorage.removeItem("access");
             localStorage.removeItem("refresh");
-
             this.user = null;
             this.isAuthenticated = false;
+            this.isLoading = false;
         },
     },
 });

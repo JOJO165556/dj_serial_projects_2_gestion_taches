@@ -1,28 +1,21 @@
 <script setup lang="ts">
 import { useAuthStore } from "./store/authStore";
 import { useThemeStore } from "./store/themeStore";
+import NavBar from "./components/NavBar.vue";
 
 const auth = useAuthStore();
 const theme = useThemeStore();
 </script>
 
 <template>
-  <div class="min-h-screen bg-white dark:bg-gray-950 transition-colors duration-300">
+  <div class="min-h-screen flex flex-col">
+    <NavBar v-if="!auth.isLoading && auth.isAuthenticated" />
 
-    <!-- Bouton switch theme -->
-    <button
-      v-if="!auth.isLoading"
-      @click="theme.toggle()"
-      class="fixed top-4 right-4 z-50 p-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shadow-md"
-      :title="theme.isDark ? 'Passer en mode clair' : 'Passer en mode sombre'"
-    >
-      <span v-if="theme.isDark" class="text-yellow-400 text-lg">&#9728;</span>
-      <span v-else class="text-gray-600 text-lg">&#9790;</span>
-    </button>
-
-    <div v-if="auth.isLoading" class="flex items-center justify-center min-h-screen text-gray-500 dark:text-gray-400">
-      Chargement...
-    </div>
-    <router-view v-else />
+    <main class="flex-1">
+      <div v-if="auth.isLoading" class="flex items-center justify-center min-h-screen">
+        <div class="w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+      <router-view v-else />
+    </main>
   </div>
 </template>

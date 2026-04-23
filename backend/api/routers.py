@@ -6,6 +6,6 @@ from api.views.column_views import ColumnViewSet
 
 router = DefaultRouter()
 router.register(r"tasks", TaskViewSet)
-router.register(r"projects", ProjectViewSet)
+router.register(r"projects", ProjectViewSet, basename="project")
 router.register(r"users", UserViewSet)
 router.register(r"columns", ColumnViewSet, basename="column")

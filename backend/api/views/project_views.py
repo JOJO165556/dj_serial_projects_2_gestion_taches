@@ -10,8 +10,11 @@ from apps.task.models import Task, Column
 from api.serializers.project_serializer import ProjectSerializer
 from api.serializers.task_serializer import TaskSerializer
 from api.permissions import IsProjectAllowed
-from services.project_service import create_project, add_member, deactivate_project
+from services.project_service import create_project, invite_member, respond_invitation, deactivate_project
 from services.kanban_service import get_full_kanban_board
+from apps.project.models import ProjectInvitation
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from drf_spectacular.openapi import OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
@@ -37,23 +40,28 @@ from drf_spectacular.types import OpenApiTypes
     destroy=extend_schema(summary="Supprimer un projet", tags=["Projets"]),
 )
 class ProjectViewSet(ModelViewSet):
-    queryset = Project.objects.all()
     serializer_class = ProjectSerializer
     permission_classes = [IsProjectAllowed]
+
+    def get_queryset(self):
+        # Ne retourner que les projets dont l'utilisateur est owner ou membre
+        user = self.request.user
+        return Project.objects.filter(
+            Q(owner=user) | Q(members=user)
+        ).distinct()
 
     def perform_create(self, serializer):
         project = create_project(
             name=serializer.validated_data["name"],
-            description=serializer.validated_data["description"],
+            description=serializer.validated_data.get("description", ""),
             owner=self.request.user,
-            start_date=serializer.validated_data["start_date"]
+            start_date=serializer.validated_data.get("start_date")
         )
-
         serializer.instance = project
 
     @extend_schema(
         summary="Ajouter un membre au projet",
-        description="Ajoute un utilisateur existant comme membre du projet via son `user_id`.",
+        description="Crée une invitation pour un utilisateur existant via son `user_id` et retourne le token d'invitation.",
         tags=["Projets"],
     )
     @action(detail=True, methods=["post"])
@@ -63,8 +71,15 @@ class ProjectViewSet(ModelViewSet):
         user_id = request.data.get("user_id")
         user = User.objects.get(id=user_id)
 
-        add_member(project, user)
-        return Response({"message": "member added"})
+        try:
+            invitation = invite_member(project, user)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=400)
+            
+        return Response({
+            "message": "Invitation créée",
+            "token": str(invitation.token)
+        })
 
     def perform_update(self, serializer):
         project = self.get_object()
@@ -101,4 +116,49 @@ class ProjectViewSet(ModelViewSet):
         # Mettre en cache (ex: 15 minutes)
         cache.set(cache_key, response_data, timeout=900)
 
-        return Response(response_data)
+        return Response(response_data)
+
+class ProjectInvitationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Détails de l'invitation",
+        description="Récupère les informations d'une invitation via son token.",
+        tags=["Projets"],
+    )
+    def get(self, request, token):
+        try:
+            invitation = ProjectInvitation.objects.get(token=token)
+        except ProjectInvitation.DoesNotExist:
+            return Response({"error": "Invitation introuvable"}, status=404)
+            
+        if invitation.user != request.user:
+            return Response({"error": "Non autorisé"}, status=403)
+            
+        return Response({
+            "project_name": invitation.project.name,
+            "owner_name": invitation.project.owner.username,
+            "status": invitation.status
+        })
+
+    @extend_schema(
+        summary="Répondre à une invitation",
+        description="Accepte ou décline une invitation (action: 'accept' ou 'decline').",
+        tags=["Projets"],
+    )
+    def post(self, request, token):
+        try:
+            invitation = ProjectInvitation.objects.get(token=token)
+        except ProjectInvitation.DoesNotExist:
+            return Response({"error": "Invitation introuvable"}, status=404)
+            
+        if invitation.user != request.user:
+            return Response({"error": "Non autorisé"}, status=403)
+            
+        action = request.data.get("action")
+        try:
+            respond_invitation(invitation, action)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=400)
+            
+        return Response({"message": f"Invitation {action}ed"})

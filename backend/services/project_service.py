@@ -6,7 +6,7 @@ automatique des colonnes Kanban), ajout de membres et désactivation.
 Ce service est utilisé par ProjectViewSet et doit rester découplé de la couche HTTP.
 """
 
-from apps.project.models import Project
+from apps.project.models import Project, ProjectInvitation
 from services.column_service import create_default_columns
 
 
@@ -21,11 +21,37 @@ def create_project(name, description, owner, start_date):
     create_default_columns(project)
     return project
 
-def add_member(project, user):
-    # Ajouter membre
-    project.members.add(user)
-    return project
+def invite_member(project, user):
+    """Crée une invitation pour un utilisateur et la retourne."""
+    # Vérifier si l'utilisateur est déjà membre
+    if user in project.members.all() or user == project.owner:
+        raise ValueError("L'utilisateur fait déjà partie du projet.")
+    
+    # Vérifier s'il y a déjà une invitation en attente
+    invitation, created = ProjectInvitation.objects.get_or_create(
+        project=project,
+        user=user,
+        defaults={'status': 'pending'}
+    )
+    
+    if not created and invitation.status in ['accepted', 'declined']:
+        invitation.status = 'pending'
+        invitation.save()
+        
+    return invitation
 
+def respond_invitation(invitation, action):
+    """Accepte ou décline une invitation."""
+    if action == 'accept':
+        invitation.status = 'accepted'
+        invitation.project.members.add(invitation.user)
+    elif action == 'decline':
+        invitation.status = 'declined'
+    else:
+        raise ValueError("Action invalide.")
+    
+    invitation.save()
+    return invitation
 def deactivate_project(project):
     # Désactiver projet
     project.is_active = False
