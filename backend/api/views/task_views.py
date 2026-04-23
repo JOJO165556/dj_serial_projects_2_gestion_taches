@@ -3,10 +3,14 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-from apps.task.models import Task
+from apps.task.models import Task, TaskAuditLog
 from api.serializers.task_serializer import TaskSerializer
 from api.permissions import IsTaskAllowed
 from services.task_service import create_task, assign_task, move_task
+from services.kanban_service import get_full_kanban_board
+from django.core.cache import cache
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from api.serializers.task_serializer import TaskSerializer, TaskReorderSerializer
@@ -52,40 +56,74 @@ class TaskViewSet(ModelViewSet):
     permission_classes = [IsTaskAllowed]
 
     def perform_create(self, serializer):
-        create_task(
+        task = create_task(
             project=serializer.validated_data["project"],
             column=serializer.validated_data.get("column"),
             title=serializer.validated_data["title"],
             description=serializer.validated_data.get("description", ""),
             priority=serializer.validated_data.get("priority", "medium"),
         )
+        _broadcast_board_update(task.project)
 
     def perform_update(self, serializer):
         task = self.get_object()
 
+        # On garde l'ancienne valeur pour comparer
+        old_column = task.column
+        old_assigned = task.assigned_to
+        
         column = serializer.validated_data.get("column")
         assigned_to = serializer.validated_data.get("assigned_to")
 
-        if column:
+        if column and column != old_column:
             move_task(task, column)
+            TaskAuditLog.objects.create(
+                task=task,
+                user=self.request.user,
+                field_name="column",
+                old_value=str(old_column.name) if old_column else "",
+                new_value=str(column.name)
+            )
 
-
-        if assigned_to:
+        if assigned_to and assigned_to != old_assigned:
             assign_task(task, assigned_to)
+            TaskAuditLog.objects.create(
+                task=task,
+                user=self.request.user,
+                field_name="assigned_to",
+                old_value=str(old_assigned.username) if old_assigned else "",
+                new_value=str(assigned_to.username)
+            )
 
         serializer.save()
-
-        # Notifier via Channels
-        from channels.layers import get_channel_layer
-        from asgiref.sync import async_to_sync
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            'kanban_updates',
-            {
-                'type': 'kanban_update',
-                'message': 'task_updated'
-            }
-        )
+        _broadcast_board_update(task.project)
+        
+    def perform_destroy(self, instance):
+        project = instance.project
+        instance.delete()
+        _broadcast_board_update(project)
+        
+def _broadcast_board_update(project):
+    # Invalider le cache
+    cache_key = f'kanban_board_{project.id}'
+    cache.delete(cache_key)
+    
+    # Recuperer le nouveau board complet
+    new_board = get_full_kanban_board(project)
+    
+    # Mettre en cache
+    cache.set(cache_key, new_board, timeout=900)
+    
+    # Notifier via Channels avec le payload complet
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        f'kanban_updates_{project.id}',
+        {
+            'type': 'kanban_update',
+            'message': 'board_updated',
+            'board_data': new_board
+        }
+    )
 
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -133,17 +171,8 @@ def reorder_tasks(request):
         with transaction.atomic():
             Task.objects.bulk_update(tasks_to_update, ['position', 'column_id'])
             
-            # Notifier via Channels
-            from channels.layers import get_channel_layer
-            from asgiref.sync import async_to_sync
-            channel_layer = get_channel_layer()
-            async_to_sync(channel_layer.group_send)(
-                'kanban_updates',
-                {
-                    'type': 'kanban_update',
-                    'message': 'tasks_reordered'
-                }
-            )
+            if tasks_to_update:
+                _broadcast_board_update(tasks_to_update[0].project)
             
     except Exception as e:
         # En cas d'erreur BD, transaction.atomic() fera un rollback automatiquement

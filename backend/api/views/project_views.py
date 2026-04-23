@@ -1,11 +1,20 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.utils import timezone
+from django.core.cache import cache
+from django.db.models import Case, When, Value, IntegerField, Q
 from apps.project.models import Project
+from apps.users.models import User
+from apps.task.models import Task, Column
 from api.serializers.project_serializer import ProjectSerializer
+from api.serializers.task_serializer import TaskSerializer
 from api.permissions import IsProjectAllowed
 from services.project_service import create_project, add_member, deactivate_project
+from services.kanban_service import get_full_kanban_board
 from drf_spectacular.utils import extend_schema, extend_schema_view
+from drf_spectacular.openapi import OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 
 
 @extend_schema_view(
@@ -65,4 +74,31 @@ class ProjectViewSet(ModelViewSet):
                 deactivate_project(project)
                 return
 
-        serializer.save()
+        serializer.save()
+
+    @extend_schema(
+        summary="Vue Kanban d'un projet",
+        description="Retourne le board Kanban structuré avec colonnes et tâches filtrées.",
+        tags=["Projets"],
+        parameters=[
+            OpenApiParameter(name="priority", description="Filtrer par priorité (low, medium, high)", required=False, type=str),
+            OpenApiParameter(name="deadline", description="Filtrer par date limite (YYYY-MM-DD)", required=False, type=str),
+            OpenApiParameter(name="overdue", description="Si 'true', retourne les tâches en retard (exclut celles de la colonne Done)", required=False, type=str),
+            OpenApiParameter(name="search", description="Filtrer par titre de tâche", required=False, type=str),
+        ]
+    )
+    @action(detail=True, methods=["get"])
+    def kanban(self, request, pk=None):
+        project = self.get_object()
+        cache_key = f'kanban_board_{project.id}'
+        
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return Response(cached_data)
+            
+        response_data = get_full_kanban_board(project)
+        
+        # Mettre en cache (ex: 15 minutes)
+        cache.set(cache_key, response_data, timeout=900)
+
+        return Response(response_data)
