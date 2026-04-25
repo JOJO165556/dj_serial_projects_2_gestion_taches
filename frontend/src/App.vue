@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { useAuthStore } from "./store/authStore";
-import { useThemeStore } from "./store/themeStore";
 import NavBar from "./components/NavBar.vue";
 
 const auth = useAuthStore();
-const theme = useThemeStore();
 </script>
 
 <template>

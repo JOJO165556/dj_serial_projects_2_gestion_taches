@@ -1,5 +1,5 @@
 import api from "../api/axios";
-import type { TokenResponse, User } from "../types/auth";
+import type { TokenResponse, User, MagicLinkVerifyResponse } from "../types/auth";
 
 export const register = async (data: {
     username: string;
@@ -23,6 +23,20 @@ export const login = async (data: {
 
 export const getMe = async (): Promise<User> => {
     const res = await api.get<User>("auth/me/")
+    return res.data;
+}
+
+export const requestMagicLink = async (email: string): Promise<void> => {
+    await api.post("auth/magic-link/", { email });
+}
+
+export const verifyMagicLink = async (data: {
+    email: string;
+    token: string;
+}): Promise<MagicLinkVerifyResponse> => {
+    const res = await api.post<MagicLinkVerifyResponse>("auth/magic-link/verify/", data);
+    localStorage.setItem("access", res.data.access);
+    localStorage.setItem("refresh", res.data.refresh);
     return res.data;
 }
 

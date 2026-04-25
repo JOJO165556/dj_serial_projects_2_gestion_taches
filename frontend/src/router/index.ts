@@ -4,11 +4,13 @@ import RegisterView from "../views/RegisterView.vue";
 import Dashboard from "../views/Dashboard.vue";
 import KanbanView from "../views/KanbanView.vue";
 import InviteView from "../views/InviteView.vue";
+import MagicLinkView from "../views/MagicLinkView.vue";
 import { useAuthStore } from "../store/authStore";
 
 const routes = [
     { path: "/login", component: LoginView },
     { path: "/register", component: RegisterView },
+    { path: "/auth/magic", component: MagicLinkView },
     { path: "/", component: Dashboard, meta: { requiresAuth: true } },
     { path: "/kanban/:id", component: KanbanView, meta: { requiresAuth: true } },
     { path: "/invite/:token", component: InviteView, meta: { requiresAuth: true } },

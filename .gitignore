@@ -3,7 +3,11 @@
 venv/
 env/
 ENV/
-*.env
+
+# Variables d'environnement
+.env
+.env.*
+!.env.example
 
 # IDE / Editeurs
 .vscode/

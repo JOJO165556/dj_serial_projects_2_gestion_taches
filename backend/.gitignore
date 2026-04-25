@@ -7,5 +7,7 @@ db.sqlite3
 /media
 /staticfiles
 .env
+.env.*
+!.env.example
 .venv/
 .pytest_cache/

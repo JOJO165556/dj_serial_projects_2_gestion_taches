@@ -21,3 +21,12 @@ class RegisterSerializer(serializers.ModelSerializer):
             password=validated_data["password"]
         )
         return user
+
+
+class MagicLinkRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class MagicLinkVerifySerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    token = serializers.CharField()

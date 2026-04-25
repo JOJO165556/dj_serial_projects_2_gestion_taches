@@ -1,5 +1,7 @@
 from django.db import transaction
+from django.db.models import Q
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
@@ -51,11 +53,21 @@ from api.serializers.task_serializer import TaskSerializer, TaskReorderSerialize
     ),
 )
 class TaskViewSet(ModelViewSet):
-    queryset = Task.objects.select_related("project", "column", "assigned_to")
     serializer_class = TaskSerializer
     permission_classes = [IsTaskAllowed]
 
+    def get_queryset(self):
+        user = self.request.user
+        queryset = Task.objects.select_related("project", "column", "assigned_to")
+        if not user or not user.is_authenticated:
+            return queryset.none()
+        return queryset.filter(
+            Q(project__owner=user) | Q(project__members=user) | Q(assigned_to=user)
+        ).distinct()
+
     def perform_create(self, serializer):
+        if not serializer.validated_data["project"].is_active:
+            raise ValidationError("Ce projet est archive et ne peut plus etre modifie.")
         task = create_task(
             project=serializer.validated_data["project"],
             column=serializer.validated_data.get("column"),
@@ -63,10 +75,16 @@ class TaskViewSet(ModelViewSet):
             description=serializer.validated_data.get("description", ""),
             priority=serializer.validated_data.get("priority", "medium"),
         )
+        assigned_to = serializer.validated_data.get("assigned_to")
+        if assigned_to:
+            assign_task(task, assigned_to)
+        serializer.instance = task
         _broadcast_board_update(task.project)
 
     def perform_update(self, serializer):
         task = self.get_object()
+        if not task.project.is_active:
+            raise ValidationError("Ce projet est archive et ne peut plus etre modifie.")
 
         # On garde l'ancienne valeur pour comparer
         old_column = task.column
@@ -99,6 +117,8 @@ class TaskViewSet(ModelViewSet):
         _broadcast_board_update(task.project)
         
     def perform_destroy(self, instance):
+        if not instance.project.is_active:
+            raise ValidationError("Ce projet est archive et ne peut plus etre modifie.")
         project = instance.project
         instance.delete()
         _broadcast_board_update(project)
@@ -155,6 +175,11 @@ def reorder_tasks(request):
     
     for task_data in tasks_data:
         task = task_map[task_data['id']]
+        if not task.project.is_active:
+            return Response(
+                {"error": "Ce projet est archive et ne peut plus etre modifie."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         if not permission.has_object_permission(request, None, task):
             return Response(
                 {"error": f"Permission refusée pour la tâche {task.id}"}, 
