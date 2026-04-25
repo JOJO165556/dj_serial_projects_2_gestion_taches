@@ -1,5 +1,6 @@
 from django.db.models import Case, When, Value, IntegerField
 from api.serializers.task_serializer import TaskSerializer
+from api.serializers.project_serializer import ProjectSerializer
 
 def get_full_kanban_board(project):
     # 1 Recuperer les colonnes
@@ -36,6 +37,7 @@ def get_full_kanban_board(project):
         del board["unassigned"]
 
     return {
+        "project": ProjectSerializer(project).data,
         "columns": columns_data,
         "board": board
     }

@@ -2,9 +2,15 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
-from api.serializers.user_serializer import UserSerializer, RegisterSerializer
+from api.serializers.user_serializer import (
+    UserSerializer,
+    RegisterSerializer,
+    MagicLinkRequestSerializer,
+    MagicLinkVerifySerializer,
+)
 from api.permissions import IsUserSelfOrAdmin
 from services.user_service import create_user, update_user
+from services.auth_service import request_magic_link, verify_magic_link
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
@@ -26,6 +32,12 @@ class UserViewSet(ModelViewSet):
     serializer_class = UserSerializer
     permission_classes = [IsUserSelfOrAdmin]
 
+    def get_queryset(self):
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return User.objects.none()
+        return User.objects.filter(is_active=True).order_by("username")
+
     def perform_create(self, serializer):
         user = create_user(**serializer.validated_data)
         serializer.instance = user
@@ -45,6 +57,55 @@ class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
+
+
+@extend_schema(
+    summary="Demander un magic link",
+    description="Envoie un lien de connexion par email si un compte actif correspond a l'adresse fournie.",
+    tags=["Authentification"],
+)
+class MagicLinkRequestView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = MagicLinkRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        request_magic_link(serializer.validated_data["email"])
+        return Response(
+            {
+                "message": "Si un compte existe pour cet email, un lien de connexion a ete envoye."
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+@extend_schema(
+    summary="Verifier un magic link",
+    description="Valide un lien de connexion et retourne les tokens JWT si le lien est valide.",
+    tags=["Authentification"],
+)
+class MagicLinkVerifyView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = MagicLinkVerifySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            auth_data = verify_magic_link(
+                email=serializer.validated_data["email"],
+                token=serializer.validated_data["token"],
+            )
+        except ValueError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {
+                "access": auth_data["access"],
+                "refresh": auth_data["refresh"],
+                "user": UserSerializer(auth_data["user"]).data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 @extend_schema(
@@ -84,4 +145,4 @@ class LogoutView(APIView):
                 {'detail': 'Token invalide ou déjà révoqué.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
+

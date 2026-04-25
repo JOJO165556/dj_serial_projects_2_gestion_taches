@@ -1,7 +1,13 @@
 from django.urls import path, include
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from api.routers import router
-from api.views.user_views import RegisterView, MeView, LogoutView
+from api.views.user_views import (
+    RegisterView,
+    MeView,
+    LogoutView,
+    MagicLinkRequestView,
+    MagicLinkVerifyView,
+)
 from drf_spectacular.utils import extend_schema
 
 # Override du tag par défaut des vues JWT ("auth" → "Authentification")
@@ -33,4 +39,6 @@ urlpatterns = [
     path("auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("auth/me/", MeView.as_view(), name="me"),
     path("auth/logout/", LogoutView.as_view(), name="logout"),
+    path("auth/magic-link/", MagicLinkRequestView.as_view(), name="magic_link_request"),
+    path("auth/magic-link/verify/", MagicLinkVerifyView.as_view(), name="magic_link_verify"),
 ]

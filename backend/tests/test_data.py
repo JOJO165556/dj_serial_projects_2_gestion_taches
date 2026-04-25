@@ -2,60 +2,75 @@ import os
 import django
 from django.utils import timezone
 
-# Configuration de l'environnement Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings.dev")
 django.setup()
 
-from backend.apps.users.models import User
-from backend.services.project_service import create_project, add_member
-from backend.services.task_service import create_task
+from apps.users.models import User
+from services.project_service import create_project
+from services.task_service import create_task, assign_task
+
 
 def populate():
-    print("Création d'utilisateurs de test...")
-    user1, _ = User.objects.get_or_create(username="AliceTest", email="alice@test.com")
-    if _: user1.set_password("password123"); user1.save()
-    
-    user2, _ = User.objects.get_or_create(username="BobTest", email="bob@test.com")
-    if _: user2.set_password("password123"); user2.save()
-    
-    print("Création de projets...")
-    p1 = create_project(
-        name="Refonte du site web",
-        description="Améliorer le design avec un CSS minimaliste.",
-        owner=user1,
-        start_date=timezone.now()
+    print("Creation d'utilisateurs de test...")
+    user1, created = User.objects.get_or_create(
+        username="AliceTest",
+        defaults={"email": "alice@test.com", "role": "admin"},
     )
-    add_member(p1, user2)
+    if created:
+        user1.set_password("password123")
+        user1.save()
 
-    p2 = create_project(
+    user2, created = User.objects.get_or_create(
+        username="BobTest",
+        defaults={"email": "bob@test.com", "role": "member"},
+    )
+    if created:
+        user2.set_password("password123")
+        user2.save()
+
+    print("Creation de projets...")
+    project1, _ = create_project(
+        name="Refonte du site web",
+        description="Ameliorer le design avec un CSS minimaliste.",
+        owner=user1,
+        start_date=timezone.now(),
+    ), None
     project1.members.add(user2)
 
-    project2 = create_project(
+    project2, _ = create_project(
         name="Application Mobile",
-        description="Développer l'application React Native.",
+        description="Developper l'application React Native.",
         owner=user2,
-        start_date=timezone.now()
+        start_date=timezone.now(),
+    ), None
+    project2.members.add(user1)
+
+    print("Creation de taches...")
+    t1 = create_task(
+        project=project1,
+        title="Creer base.html",
+        description="Mettre en place le template principal.",
+        priority="high",
+    )
+    t2 = create_task(
+        project=project1,
+        title="Ajouter du style",
+        description="Ajouter styles.css avec des ombres legeres.",
+        priority="medium",
+    )
+    t3 = create_task(
+        project=project2,
+        title="Initialiser le projet",
+        description="Configurer le socle mobile.",
+        priority="high",
     )
 
-    print("Ajout des utilisateurs de test aux projets de test...")
-    for user in (user1, user2):
-        project1.members.add(user)
-        project2.members.add(user)
+    assign_task(t1, user1)
+    assign_task(t2, user2)
+    assign_task(t3, user2)
 
-    print("Création de tâches...")
-    t1 = create_task(project=project1, title="Créer base.html", description="Mettre en place le template principal.", priority="high")
-    t2 = create_task(project=project1, title="Ajouter du style", description="Ajouter styles.css avec des ombres légères.", priority="medium")
-    t3 = create_task(project=project2, title="Initialiser le projet", description="npx react-native init App", priority="high")
-    
-    # Assignation manuelle car le service n'affecte pas l'utilisateur lors de la création
-    t1.assigned_to = user1
-    t1.save()
-    t2.assigned_to = user2
-    t2.save()
-    t3.assigned_to = user2
-    t3.save()
+    print("Donnees de test ajoutees avec succes.")
 
-    print("Données de test ajoutées avec succès !")
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     populate()

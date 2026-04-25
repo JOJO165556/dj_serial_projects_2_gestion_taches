@@ -18,6 +18,7 @@ def create_project(name, description, owner, start_date):
         owner=owner,
         start_date=start_date,
     )
+    project.members.add(owner)
     create_default_columns(project)
     return project
 
@@ -45,6 +46,9 @@ def respond_invitation(invitation, action):
     if action == 'accept':
         invitation.status = 'accepted'
         invitation.project.members.add(invitation.user)
+        if invitation.user.role == "reader":
+            invitation.user.role = "member"
+            invitation.user.save(update_fields=["role"])
     elif action == 'decline':
         invitation.status = 'declined'
     else:

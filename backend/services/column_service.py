@@ -2,17 +2,17 @@
 Service de gestion des colonnes Kanban.
 
 Fournit les fonctions pour créer, configurer et initialiser les colonnes
-d'un tableau Kanban associé à un projet. Les colonnes par défaut (To Do,
-In Progress, Done) sont automatiquement créées à la création d'un projet.
+d'un tableau Kanban associé à un projet. Les colonnes par défaut (A faire,
+En cours, Termine) sont automatiquement créées à la création d'un projet.
 """
 
 from apps.task.models import Column
 
 
 DEFAULT_COLUMNS = [
-    {"name": "To Do", "order": 0, "color": "#94a3b8"},
-    {"name": "In Progress", "order": 1, "color": "#6366f1"},
-    {"name": "Done", "order": 2, "color": "#22c55e"},
+    {"name": "A faire", "order": 0, "color": "#94a3b8"},
+    {"name": "En cours", "order": 1, "color": "#6366f1"},
+    {"name": "Termine", "order": 2, "color": "#22c55e"},
 ]
 
 

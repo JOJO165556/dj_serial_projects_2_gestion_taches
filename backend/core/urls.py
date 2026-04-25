@@ -10,7 +10,7 @@ from drf_spectacular.views import (
 
 urlpatterns = [
     # Redirection racine vers Vue.js (dev: 5173, prod: adapter)
-    path("", RedirectView.as_view(url="http://localhost:5173/", permanent=False)),
+    path("", RedirectView.as_view(url="/api/docs/", permanent=False)),
 
     path("admin/", admin.site.urls),
     path("api/", include("api.urls")),

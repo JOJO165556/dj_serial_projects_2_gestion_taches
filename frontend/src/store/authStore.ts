@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { login, getMe } from "../services/authService";
+import { login, getMe, verifyMagicLink } from "../services/authService";
 import type { User } from "../types/auth";
 
 export const useAuthStore = defineStore("auth", {
@@ -40,6 +40,19 @@ export const useAuthStore = defineStore("auth", {
                 this.logout();
             } finally {
                 this.isLoading = false;
+            }
+        },
+
+        async loginWithMagicLink(payload: { email: string; token: string }) {
+            try {
+                this.error = null;
+                const data = await verifyMagicLink(payload);
+                this.user = data.user;
+                this.isAuthenticated = true;
+                this.isLoading = false;
+            } catch (err: any) {
+                this.error = err?.response?.data?.error ?? "Lien de connexion invalide";
+                throw err;
             }
         },
 

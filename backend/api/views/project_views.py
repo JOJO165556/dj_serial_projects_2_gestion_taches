@@ -82,13 +82,6 @@ class ProjectViewSet(ModelViewSet):
         })
 
     def perform_update(self, serializer):
-        project = self.get_object()
-
-        if "is_active" in serializer.validated_data:
-            if serializer.validated_data.get("is_active") is False:
-                deactivate_project(project)
-                return
-
         serializer.save()
 
     @extend_schema(
