@@ -9,18 +9,9 @@ const app = createApp(App);
 const pinia = createPinia();
 
 app.use(pinia);
-app.use(router);
-
 const auth = useAuthStore();
+await auth.init();
 
-const token = localStorage.getItem("access");
-
-if (token) {
-    await auth.fetchUser().catch(() => {
-        auth.logout(); //token invalide
-    });
-} else {
-    auth.isLoading = false;
-}
+app.use(router);
 
 app.mount('#app')

@@ -70,7 +70,7 @@ class TaskSerializer(serializers.ModelSerializer):
             is_member = assigned_to == project.owner or project.members.filter(id=assigned_to.id).exists()
             if not is_member:
                 raise serializers.ValidationError(
-                    {"assigned_to": "L'utilisateur assigné doit appartenir au projet."}
+                    {"assigned_to": f"'{assigned_to.username}' ne fait pas partie du projet '{project.name}'. Invitez-le d'abord avant de lui assigner une tâche."}
                 )
 
         return attrs

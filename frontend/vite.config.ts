@@ -9,5 +9,20 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "src"),
     }
+  },
+  server: {
+    proxy: {
+      // Proxy HTTP API vers Django
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      // Proxy WebSocket vers Django Channels
+      '/ws': {
+        target: 'ws://localhost:8000',
+        ws: true,
+        changeOrigin: true,
+      },
+    }
   }
 })

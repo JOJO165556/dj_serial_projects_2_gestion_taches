@@ -1,5 +1,8 @@
+import logging
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
+
+logger = logging.getLogger(__name__)
 
 
 def send_project_invitation_email(invitation, invited_by, custom_message=""):
@@ -59,7 +62,11 @@ def send_project_invitation_email(invitation, invited_by, custom_message=""):
         to=[invitation.user.email],
     )
     email.attach_alternative(html_body, "text/html")
-    email.send(fail_silently=False)
+    try:
+        email.send(fail_silently=False)
+    except Exception as exc:
+        logger.error("Erreur envoi email invitation a %s : %s", invitation.user.email, exc)
+        return False
     return True
 
 
@@ -93,5 +100,9 @@ def send_magic_link_email(user, magic_url):
         to=[user.email],
     )
     email.attach_alternative(html_body, "text/html")
-    email.send(fail_silently=False)
+    try:
+        email.send(fail_silently=False)
+    except Exception as exc:
+        logger.error("Erreur envoi magic link a %s : %s", user.email, exc)
+        return False
     return True

@@ -18,8 +18,8 @@ onMounted(async () => {
   try {
     const res = await getInvitation(token)
     invitation.value = res.data
-  } catch {
-    error.value = "Invitation introuvable ou expirée."
+  } catch (err: any) {
+    error.value = err?.response?.data?.error ?? "Invitation introuvable ou expirée."
   } finally {
     loading.value = false
   }
@@ -31,7 +31,7 @@ const respond = async (action: 'accept' | 'decline') => {
     await respondToInvitation(token, action)
     done.value = action === 'accept' ? 'accepted' : 'declined'
     if (action === 'accept') {
-      setTimeout(() => router.push('/'), 1800)
+      router.push('/')
     }
   } catch (e: any) {
     error.value = e?.response?.data?.error ?? "Une erreur est survenue."

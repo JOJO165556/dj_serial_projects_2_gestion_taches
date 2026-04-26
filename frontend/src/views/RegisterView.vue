@@ -8,15 +8,15 @@ const theme = useThemeStore()
 const router = useRouter()
 
 const form = ref({ username: '', email: '', password: '', passwordConfirm: '' })
-const error = ref('')
+const errors = ref<string[]>([])
 const loading = ref(false)
 const showPassword = ref(false)
 const showPasswordConfirm = ref(false)
 
 const submit = async () => {
-  error.value = ''
+  errors.value = []
   if (form.value.password !== form.value.passwordConfirm) {
-    error.value = 'Les mots de passe ne correspondent pas'
+    errors.value = ['Les mots de passe ne correspondent pas']
     return
   }
   loading.value = true
@@ -25,9 +25,16 @@ const submit = async () => {
     router.push('/login')
   } catch (err: any) {
     const data = err?.response?.data
-    if (data?.username) error.value = "Ce nom d'utilisateur est déjà pris"
-    else if (data?.email) error.value = 'Cet email est déjà utilisé'
-    else error.value = 'Une erreur est survenue, veuillez réessayer'
+    if (!data) {
+      errors.value = ['Une erreur est survenue, veuillez réessayer']
+      return
+    }
+    const collected: string[] = []
+    if (data.username) collected.push(...[data.username].flat())
+    if (data.email) collected.push(...[data.email].flat())
+    if (data.password) collected.push(...[data.password].flat())
+    if (data.non_field_errors) collected.push(...[data.non_field_errors].flat())
+    errors.value = collected.length ? collected : ['Une erreur est survenue, veuillez réessayer']
   } finally {
     loading.value = false
   }
@@ -153,12 +160,14 @@ const submit = async () => {
             </div>
           </div>
 
-          <!-- Erreur -->
-          <div v-if="error" class="flex items-start gap-2 px-3 py-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <!-- Erreurs -->
+          <div v-if="errors.length" class="flex items-start gap-2 px-3 py-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" class="text-red-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
             </svg>
-            <p class="text-xs text-red-600 dark:text-red-400">{{ error }}</p>
+            <ul class="text-xs text-red-600 dark:text-red-400 space-y-0.5 list-disc list-inside">
+              <li v-for="(msg, i) in errors" :key="i">{{ msg }}</li>
+            </ul>
           </div>
 
           <button

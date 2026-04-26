@@ -17,6 +17,7 @@ const buildWsUrl = (projectId: number) => {
     return `${configuredUrl.replace(/\/$/, '')}/ws/kanban/${projectId}/`
   }
 
+  // En dev, Vite proxy redirige /ws/* vers Django Channels
   const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
   return `${protocol}://${window.location.host}/ws/kanban/${projectId}/`
 }
@@ -85,12 +86,8 @@ export const useKanbanStore = defineStore('kanban', () => {
     try {
       const res = await apiCreateTask(data)
       const task: Task = res.data
-      if (fullKanban.value && task.column !== null) {
-        if (!fullKanban.value.board[task.column]) {
-          fullKanban.value.board[task.column] = []
-        }
-        fullKanban.value.board[task.column].push(task)
-      }
+      // On n'ajoute pas optimistement : le WebSocket broadcastera la mise à jour
+      // pour éviter la duplication (ajout local + broadcast WS)
       return task
     } catch {
       return null
