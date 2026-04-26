@@ -13,8 +13,10 @@ from services.user_service import create_user, update_user
 from services.auth_service import request_magic_link, verify_magic_link
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from drf_spectacular.utils import extend_schema, extend_schema_view
+from django.conf import settings
 
 User = get_user_model()
 
@@ -98,14 +100,15 @@ class MagicLinkVerifyView(APIView):
         except ValueError as exc:
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(
+        response = Response(
             {
                 "access": auth_data["access"],
-                "refresh": auth_data["refresh"],
                 "user": UserSerializer(auth_data["user"]).data,
             },
             status=status.HTTP_200_OK,
         )
+        _set_refresh_cookie(response, auth_data["refresh"])
+        return response
 
 
 @extend_schema(
@@ -126,23 +129,89 @@ class MeView(APIView):
     description=(
         "Invalide le `refresh` token côté serveur (blacklist). "
         "Après cette requête, le token ne peut plus être utilisé pour obtenir un nouvel `access` token. "
-        "Le client doit supprimer ses tokens du stockage local."
+        "Supprime également le cookie du refresh token."
     ),
     tags=["Authentification"],
-    request={'application/json': {'type': 'object', 'properties': {'refresh': {'type': 'string'}}, 'required': ['refresh']}},
     responses={204: None},
 )
 class LogoutView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request):
+        cookie_name = settings.SIMPLE_JWT.get('AUTH_COOKIE_REFRESH', 'refresh_token')
+        refresh_token = request.COOKIES.get(cookie_name)
+        
+        if refresh_token:
+            try:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            except TokenError:
+                pass # Already blacklisted or invalid
+        
+        response = Response(status=status.HTTP_204_NO_CONTENT)
+        response.delete_cookie(cookie_name)
+        return response
+
+
+def _set_refresh_cookie(response, refresh_token_value):
+    """Attache le cookie de refresh token à la réponse de façon persistante."""
+    jwt_settings = settings.SIMPLE_JWT
+    cookie_name = jwt_settings.get('AUTH_COOKIE_REFRESH', 'refresh_token')
+    lifetime = jwt_settings.get('REFRESH_TOKEN_LIFETIME')
+    max_age = int(lifetime.total_seconds()) if hasattr(lifetime, 'total_seconds') else 86400
+
+    response.set_cookie(
+        key=cookie_name,
+        value=refresh_token_value,
+        max_age=max_age,
+        secure=jwt_settings.get('AUTH_COOKIE_SECURE', False),
+        httponly=jwt_settings.get('AUTH_COOKIE_HTTP_ONLY', True),
+        samesite=jwt_settings.get('AUTH_COOKIE_SAMESITE', 'Lax'),
+        path=jwt_settings.get('AUTH_COOKIE_PATH', '/'),
+    )
+    return cookie_name
+
+
+class CookieTokenObtainPairView(TokenObtainPairView):
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200:
+            refresh_token = response.data.get('refresh')
+            if refresh_token:
+                _set_refresh_cookie(response, refresh_token)
+                del response.data['refresh']
+        return response
+
+from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+
+class CookieTokenRefreshSerializer(serializers.Serializer):
+    pass # Aucun champ requis dans le corps pour Swagger
+
+class CookieTokenRefreshView(TokenRefreshView):
+    serializer_class = CookieTokenRefreshSerializer
+
+    def post(self, request, *args, **kwargs):
+        cookie_name = settings.SIMPLE_JWT.get('AUTH_COOKIE_REFRESH', 'refresh_token')
+        refresh_token = request.COOKIES.get(cookie_name)
+
+        if not refresh_token:
+            return Response({"detail": "Refresh token manquant dans les cookies."}, status=status.HTTP_401_UNAUTHORIZED)
+
+        serializer = TokenRefreshSerializer(data={'refresh': refresh_token})
+
         try:
-            token = RefreshToken(request.data.get('refresh'))
-            token.blacklist()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except TokenError:
-            return Response(
-                {'detail': 'Token invalide ou déjà révoqué.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            serializer.is_valid(raise_exception=True)
+        except TokenError as e:
+            raise InvalidToken(e.args[0])
+
+        access = serializer.validated_data.get('access')
+        new_refresh = serializer.validated_data.get('refresh')
+
+        response = Response({'access': str(access)}, status=status.HTTP_200_OK)
+
+        if new_refresh:
+            _set_refresh_cookie(response, str(new_refresh))
+
+        return response
 

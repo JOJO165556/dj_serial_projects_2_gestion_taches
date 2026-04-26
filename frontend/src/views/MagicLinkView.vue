@@ -22,7 +22,8 @@ onMounted(async () => {
 
   try {
     await auth.loginWithMagicLink({ email, token })
-    router.replace('/')
+    const redirect = route.query.redirect as string || '/'
+    router.replace(redirect)
   } catch (err: any) {
     error.value = err?.response?.data?.error ?? auth.error ?? 'Lien de connexion invalide.'
   } finally {

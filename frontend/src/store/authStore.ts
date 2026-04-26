@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { login, getMe, verifyMagicLink } from "../services/authService";
+import { login, getMe, verifyMagicLink, logout as logoutService } from "../services/authService";
 import type { User } from "../types/auth";
 
 export const useAuthStore = defineStore("auth", {
@@ -13,12 +13,14 @@ export const useAuthStore = defineStore("auth", {
     actions: {
         // Appele au demarrage de l'app pour restaurer la session
         async init() {
-            const token = localStorage.getItem("access");
-            if (!token) {
+            try {
+                await this.fetchUser();
+            } catch {
+                // Pas de cookie valide, utilisateur non connecte
+                this.user = null;
+                this.isAuthenticated = false;
                 this.isLoading = false;
-                return;
             }
-            await this.fetchUser();
         },
 
         async loginUser(credentials: { username: string; password: string }) {
@@ -37,7 +39,9 @@ export const useAuthStore = defineStore("auth", {
                 this.user = user;
                 this.isAuthenticated = true;
             } catch {
-                this.logout();
+                // Ne pas appeler logout() ici pour eviter la cascade
+                this.user = null;
+                this.isAuthenticated = false;
             } finally {
                 this.isLoading = false;
             }
@@ -56,12 +60,16 @@ export const useAuthStore = defineStore("auth", {
             }
         },
 
-        logout() {
-            localStorage.removeItem("access");
-            localStorage.removeItem("refresh");
-            this.user = null;
-            this.isAuthenticated = false;
-            this.isLoading = false;
+        async logout() {
+            try {
+                await logoutService();
+            } catch (err) {
+                // Ignore errors on logout
+            } finally {
+                this.user = null;
+                this.isAuthenticated = false;
+                this.isLoading = false;
+            }
         },
     },
 });

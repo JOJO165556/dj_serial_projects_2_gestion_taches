@@ -2,11 +2,12 @@
 import { ref } from 'vue'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { requestMagicLink } from '@/services/authService'
 
 const auth = useAuthStore()
 const theme = useThemeStore()
+const route = useRoute()
 const router = useRouter()
 
 const form = ref({ username: '', password: '' })
@@ -21,7 +22,10 @@ const submit = async () => {
   loading.value = true
   try {
     await auth.loginUser(form.value)
-    if (auth.isAuthenticated) router.push('/')
+    if (auth.isAuthenticated) {
+      const redirect = route.query.redirect as string || '/'
+      router.push(redirect)
+    }
   } finally {
     loading.value = false
   }

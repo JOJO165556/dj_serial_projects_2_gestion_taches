@@ -64,7 +64,7 @@ const initials = (name: string) => name.slice(0, 2).toUpperCase()
       </p>
       <button
         v-if="!readonly"
-        @click.stop="emit('delete', task.id)"
+        @click.stop="window.confirm(`Supprimer « ${task.title} » ? Cette action est irréversible.`) && emit('delete', task.id)"
         class="p-1 rounded-md text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 opacity-100 sm:opacity-0 sm:group-hover/card:opacity-100 transition-all shrink-0 -mt-0.5 -mr-0.5"
         title="Supprimer"
         aria-label="Supprimer la tâche"

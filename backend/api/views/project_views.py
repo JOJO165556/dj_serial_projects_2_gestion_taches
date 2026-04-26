@@ -2,6 +2,7 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
+from datetime import timedelta
 from django.core.cache import cache
 from django.db.models import Case, When, Value, IntegerField, Q
 from apps.project.models import Project
@@ -124,14 +125,23 @@ class ProjectInvitationView(APIView):
             invitation = ProjectInvitation.objects.get(token=token)
         except ProjectInvitation.DoesNotExist:
             return Response({"error": "Invitation introuvable"}, status=404)
-            
+
         if invitation.user != request.user:
-            return Response({"error": "Non autorisé"}, status=403)
-            
+            return Response(
+                {"error": f"Cette invitation est destinée à {invitation.user.email}, mais vous êtes connecté avec le compte {request.user.email}."}, 
+                status=403
+            )
+
+        # Expiration : 7 jours après création
+        expires_at = invitation.created_at + timedelta(days=7)
+        if timezone.now() > expires_at:
+            return Response({"error": "Ce lien d'invitation a expiré (validité : 7 jours)."}, status=410)
+
         return Response({
             "project_name": invitation.project.name,
             "owner_name": invitation.project.owner.username,
-            "status": invitation.status
+            "status": invitation.status,
+            "expires_at": expires_at.isoformat(),
         })
 
     @extend_schema(
@@ -146,8 +156,16 @@ class ProjectInvitationView(APIView):
             return Response({"error": "Invitation introuvable"}, status=404)
             
         if invitation.user != request.user:
-            return Response({"error": "Non autorisé"}, status=403)
+            return Response(
+                {"error": f"Cette invitation est destinée à {invitation.user.email}, mais vous êtes connecté avec le compte {request.user.email}."}, 
+                status=403
+            )
             
+        # Expiration : 7 jours après création
+        expires_at = invitation.created_at + timedelta(days=7)
+        if timezone.now() > expires_at:
+            return Response({"error": "Ce lien d'invitation a expiré (validité : 7 jours)."}, status=410)
+
         action = request.data.get("action")
         try:
             respond_invitation(invitation, action)

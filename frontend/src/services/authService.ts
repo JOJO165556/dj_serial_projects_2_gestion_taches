@@ -1,4 +1,4 @@
-import api from "../api/axios";
+import api, { setAccessToken } from "../api/axios";
 import type { TokenResponse, User, MagicLinkVerifyResponse } from "../types/auth";
 
 export const register = async (data: {
@@ -15,8 +15,7 @@ export const login = async (data: {
 }): Promise<TokenResponse> => {
     const res = await api.post<TokenResponse>("auth/token/", data);
 
-    localStorage.setItem("access", res.data.access);
-    localStorage.setItem("refresh", res.data.refresh);
+    setAccessToken(res.data.access);
 
     return res.data;
 };
@@ -35,19 +34,19 @@ export const verifyMagicLink = async (data: {
     token: string;
 }): Promise<MagicLinkVerifyResponse> => {
     const res = await api.post<MagicLinkVerifyResponse>("auth/magic-link/verify/", data);
-    localStorage.setItem("access", res.data.access);
-    localStorage.setItem("refresh", res.data.refresh);
+    setAccessToken(res.data.access);
     return res.data;
 }
 
 export const refreshToken = async () => {
-    const refresh = localStorage.getItem("refresh");
+    const res = await api.post("auth/refresh/", {});
 
-    const res = await api.post("auth/refresh/", {
-        refresh,
-    });
-
-    localStorage.setItem("access", res.data.access);
+    setAccessToken(res.data.access);
 
     return res.data.access;
+}
+
+export const logout = async () => {
+    await api.post("auth/logout/");
+    setAccessToken(null);
 }

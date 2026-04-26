@@ -21,26 +21,19 @@ const router = createRouter({
     routes,
 });
 
-router.beforeEach((to, _, next) => {
+router.beforeEach((to, _) => {
     const auth = useAuthStore();
 
-    // Attendre que l'init soit terminee avant de decider la redirection
-    if (auth.isLoading) {
-        // L'init dans main.ts est await, donc isLoading = false avant le premier rendu
-        // Ce cas ne devrait pas se produire mais on laisse passer par securite
-        return next();
-    }
-
     if (to.meta.requiresAuth && !auth.isAuthenticated) {
-        return next("/login");
+        return { path: '/login', query: { redirect: to.fullPath } }
     }
 
     // Empecher l'acces a /login ou /register si deja connecte
-    if ((to.path === "/login" || to.path === "/register") && auth.isAuthenticated) {
-        return next("/");
+    if ((to.path === '/login' || to.path === '/register') && auth.isAuthenticated) {
+        return '/'
     }
 
-    next();
+    return true
 });
 
 export default router;

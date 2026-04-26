@@ -7,21 +7,40 @@ from api.views.user_views import (
     LogoutView,
     MagicLinkRequestView,
     MagicLinkVerifyView,
+    CookieTokenObtainPairView,
+    CookieTokenRefreshView,
 )
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, inline_serializer
+from rest_framework import serializers
 
 # Override du tag par défaut des vues JWT ("auth" → "Authentification")
-TokenObtainPairView = extend_schema(
+CookieTokenObtainPairView = extend_schema(
     summary="Obtenir les tokens JWT (login)",
-    description="Retourne un `access` token (60 min) et un `refresh` token (1 jour). Passez le `access` dans le header `Authorization: Bearer <token>` pour toutes les requêtes protégées.",
+    description="Retourne un `access` token (60 min) dans le JSON et un `refresh` token (1 jour) dans un cookie sécurisé. Passez le `access` dans le header `Authorization: Bearer <token>` pour toutes les requêtes protégées.",
     tags=["Authentification"],
-)(TokenObtainPairView)
+    responses={
+        200: inline_serializer(
+            name='CookieTokenObtainPairResponse',
+            fields={
+                'access': serializers.CharField(),
+            }
+        )
+    }
+)(CookieTokenObtainPairView)
 
-TokenRefreshView = extend_schema(
+CookieTokenRefreshView = extend_schema(
     summary="Rafraîchir le token d'accès",
-    description="Échange le `refresh` token contre un nouveau `access` token. L'ancien `refresh` token est invalidé (rotation activée).",
+    description="Lit le `refresh` token depuis le cookie et retourne un nouveau `access` token. Le cookie refresh est mis à jour.",
     tags=["Authentification"],
-)(TokenRefreshView)
+    responses={
+        200: inline_serializer(
+            name='CookieTokenRefreshResponse',
+            fields={
+                'access': serializers.CharField(),
+            }
+        )
+    }
+)(CookieTokenRefreshView)
 
 from api.views.task_views import reorder_tasks
 from api.views.project_views import ProjectInvitationView
@@ -35,8 +54,8 @@ urlpatterns = [
 
     # Authentification
     path("auth/register/", RegisterView.as_view(), name="register"),
-    path("auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
-    path("auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("auth/token/", CookieTokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("auth/refresh/", CookieTokenRefreshView.as_view(), name="token_refresh"),
     path("auth/me/", MeView.as_view(), name="me"),
     path("auth/logout/", LogoutView.as_view(), name="logout"),
     path("auth/magic-link/", MagicLinkRequestView.as_view(), name="magic_link_request"),
