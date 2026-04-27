@@ -50,6 +50,7 @@ export interface Invitation {
   owner: User
   user: User
   status: InvitationStatus
+  expires_at: string
 }
 
 export interface InvitationCreateResult {

@@ -94,7 +94,14 @@ const handleEdit = async () => {
   }
 }
 
-const handleDelete = async (id: number) => {
+const permError = ref(false)
+
+const handleDelete = async (id: number, ownerId: number) => {
+  if (auth.user?.id !== ownerId) {
+    permError.value = true
+    setTimeout(() => { permError.value = false }, 3000)
+    return
+  }
   if (!confirm('Supprimer ce projet définitivement ?')) return
   await deleteProject(id)
   await fetchProjects()
@@ -146,7 +153,13 @@ const toggleArchive = async (project: Project) => {
   }
 }
 
+const copiedToast = ref(false)
 const copyToClipboard = (text: string) => navigator.clipboard.writeText(text)
+const copyWithFeedback = async (text: string) => {
+  await copyToClipboard(text)
+  copiedToast.value = true
+  setTimeout(() => { copiedToast.value = false }, 2500)
+}
 
 const closeMemberModal = () => {
   memberModal.value = false
@@ -300,7 +313,7 @@ const getBandColor = (id: number) => bandColors[id % bandColors.length]
               </div>
             </div>
 
-            <!-- Actions (seulement pour le propriétaire) -->
+            <!-- Actions propriétaire (sauf supprimer) -->
             <div v-if="project.owner.id === auth.user?.id" class="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
               <button
                 v-if="project.is_active"
@@ -332,16 +345,17 @@ const getBandColor = (id: number) => bandColors[id % bandColors.length]
                   <rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8h14v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8Z"/><path d="m10 12 2 2 2-2"/>
                 </svg>
               </button>
-              <button
-                @click.stop="handleDelete(project.id)"
-                class="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                title="Supprimer"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
-                </svg>
-              </button>
             </div>
+            <!-- Bouton supprimer visible à tous les membres -->
+            <button
+              @click.stop="handleDelete(project.id, project.owner.id)"
+              class="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+              title="Supprimer"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+              </svg>
+            </button>
           </div>
         </div>
       </div>
@@ -425,7 +439,7 @@ const getBandColor = (id: number) => bandColors[id % bandColors.length]
               class="flex-1 text-xs px-2.5 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none"
             />
             <button
-              @click="copyToClipboard(inviteLink)"
+              @click="copyWithFeedback(inviteLink)"
               class="px-3 py-2 text-xs font-medium rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shrink-0"
             >
               Copier
@@ -487,4 +501,36 @@ const getBandColor = (id: number) => bandColors[id % bandColors.length]
     </AppModal>
 
   </div>
+
+  <!-- Toast "Lien copié" -->
+  <Teleport to="body">
+    <Transition name="toast-slide">
+      <div
+        v-if="copiedToast"
+        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-4 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-xl shadow-xl"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        Lien copié dans le presse-papier !
+      </div>
+    </Transition>
+  </Teleport>
+
+  <!-- Toast erreur de permission -->
+  <Teleport to="body">
+    <Transition name="toast-slide">
+      <div
+        v-if="permError"
+        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-4 py-3 bg-red-600 text-white text-sm font-medium rounded-xl shadow-xl whitespace-nowrap"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        Seul le propriétaire du projet peut le supprimer.
+      </div>
+    </Transition>
+  </Teleport>
+
 </template>
+

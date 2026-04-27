@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
 import { useRouter } from 'vue-router'
@@ -7,11 +8,15 @@ const auth = useAuthStore()
 const theme = useThemeStore()
 const router = useRouter()
 
-const logout = () => {
-  if (confirm('Voulez-vous vraiment vous déconnecter ?')) {
-    auth.logout()
-    router.push('/login')
-  }
+const showLogoutModal = ref(false)
+const loggingOut = ref(false)
+
+const confirmLogout = async () => {
+  loggingOut.value = true
+  await auth.logout()
+  showLogoutModal.value = false
+  loggingOut.value = false
+  router.push('/login')
 }
 </script>
 
@@ -72,7 +77,7 @@ const logout = () => {
 
         <!-- Déconnexion -->
         <button
-          @click="logout"
+          @click="showLogoutModal = true"
           class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -83,4 +88,49 @@ const logout = () => {
       </div>
     </div>
   </header>
+
+  <!-- Modale de confirmation de déconnexion -->
+  <Teleport to="body">
+    <Transition name="modal-fade">
+      <div
+        v-if="showLogoutModal"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+        @click.self="showLogoutModal = false"
+      >
+        <div class="w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 p-6 space-y-4">
+          <!-- Icône -->
+          <div class="flex items-center gap-3">
+            <div class="flex-shrink-0 w-9 h-9 rounded-full bg-red-50 dark:bg-red-900/30 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-500">
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+            </div>
+            <div>
+              <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Se déconnecter ?</h2>
+              <p class="text-xs text-gray-500 dark:text-gray-400">Vous devrez vous reconnecter pour accéder à votre espace.</p>
+            </div>
+          </div>
+
+          <!-- Boutons -->
+          <div class="flex gap-2 pt-1">
+            <button
+              @click="showLogoutModal = false"
+              :disabled="loggingOut"
+              class="flex-1 py-2 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+            >
+              Annuler
+            </button>
+            <button
+              @click="confirmLogout"
+              :disabled="loggingOut"
+              class="flex-1 py-2 text-sm font-semibold rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors disabled:opacity-50"
+            >
+              {{ loggingOut ? 'Déconnexion...' : 'Se déconnecter' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
 </template>
+

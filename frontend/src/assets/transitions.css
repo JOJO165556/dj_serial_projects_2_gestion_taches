@@ -1,0 +1,35 @@
+/*
+  Transitions globales partagées
+  Importé dans main.ts, disponible dans tous les composants
+*/
+
+/* --- Toast (slide depuis le bas) --- */
+.toast-slide-enter-active,
+.toast-slide-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.toast-slide-enter-from,
+.toast-slide-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(12px);
+}
+
+/* --- Modale (fade + léger scale) --- */
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.18s ease;
+}
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+}
+.modal-fade-enter-active > div,
+.modal-fade-leave-active > div {
+  transition: transform 0.18s ease;
+}
+.modal-fade-enter-from > div {
+  transform: scale(0.95);
+}
+.modal-fade-leave-to > div {
+  transform: scale(0.95);
+}

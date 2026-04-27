@@ -59,6 +59,7 @@ class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
 
 
 @extend_schema(
@@ -68,6 +69,7 @@ class RegisterView(generics.CreateAPIView):
 )
 class MagicLinkRequestView(APIView):
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         serializer = MagicLinkRequestSerializer(data=request.data)
@@ -135,6 +137,7 @@ class MeView(APIView):
     responses={204: None},
 )
 class LogoutView(APIView):
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
