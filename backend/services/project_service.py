@@ -8,6 +8,7 @@ Ce service est utilisé par ProjectViewSet et doit rester découplé de la couch
 
 from apps.project.models import Project, ProjectInvitation
 from services.column_service import create_default_columns
+from services.notification_service import send_project_invitation_email
 
 
 def create_project(name, description, owner, start_date):
@@ -22,7 +23,7 @@ def create_project(name, description, owner, start_date):
     create_default_columns(project)
     return project
 
-def invite_member(project, user):
+def invite_member(project, user, invited_by=None, custom_message=""):
     """Crée une invitation pour un utilisateur et la retourne."""
     # Vérifier si l'utilisateur est déjà membre
     if user in project.members.all() or user == project.owner:
@@ -38,7 +39,13 @@ def invite_member(project, user):
     if not created and invitation.status in ['accepted', 'declined']:
         invitation.status = 'pending'
         invitation.save()
-        
+
+    # Envoi de l'email d'invitation
+    email_sent = False
+    if invited_by:
+        email_sent = send_project_invitation_email(invitation, invited_by, custom_message)
+
+    invitation._email_sent = email_sent
     return invitation
 
 def respond_invitation(invitation, action):

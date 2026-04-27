@@ -71,15 +71,17 @@ class ProjectViewSet(ModelViewSet):
 
         user_id = request.data.get("user_id")
         user = User.objects.get(id=user_id)
+        custom_message = request.data.get("message", "")
 
         try:
-            invitation = invite_member(project, user)
+            invitation = invite_member(project, user, invited_by=request.user, custom_message=custom_message)
         except ValueError as e:
             return Response({"error": str(e)}, status=400)
             
         return Response({
             "message": "Invitation créée",
-            "token": str(invitation.token)
+            "token": str(invitation.token),
+            "email_sent": getattr(invitation, "_email_sent", False),
         })
 
     def perform_update(self, serializer):
@@ -138,10 +140,24 @@ class ProjectInvitationView(APIView):
             return Response({"error": "Ce lien d'invitation a expiré (validité : 7 jours)."}, status=410)
 
         return Response({
-            "project_name": invitation.project.name,
-            "owner_name": invitation.project.owner.username,
+            "token": str(invitation.token),
             "status": invitation.status,
             "expires_at": expires_at.isoformat(),
+            "project": {
+                "id": invitation.project.id,
+                "name": invitation.project.name,
+                "description": invitation.project.description or "",
+            },
+            "owner": {
+                "id": invitation.project.owner.id,
+                "username": invitation.project.owner.username,
+                "email": invitation.project.owner.email,
+            },
+            "user": {
+                "id": invitation.user.id,
+                "username": invitation.user.username,
+                "email": invitation.user.email,
+            },
         })
 
     @extend_schema(

@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useKanbanStore } from '@/store/kanbanStore'
+import { useAuthStore } from '@/store/authStore'
 import KanbanColumn from '@/components/KanbanColumn.vue'
 import AppModal from '@/components/AppModal.vue'
 import type { Task, Priority } from '@/types/kanban'
@@ -9,10 +10,13 @@ import type { Task, Priority } from '@/types/kanban'
 const route = useRoute()
 const router = useRouter()
 const store = useKanbanStore()
+const auth = useAuthStore()
 
 const projectId = computed(() => Number(route.params.id))
 const showMobileFilters = ref(false)
 const isArchivedProject = computed(() => store.fullKanban?.project?.is_active === false)
+const isOwner = computed(() => store.fullKanban?.project?.owner?.id === auth.user?.id)
+const taskPermError = ref(false)
 
 // Filtres
 const filters = ref({ search: '', priority: '' as Priority | '', overdue: false, assignee: '' })
@@ -38,7 +42,7 @@ const filteredBoard = computed(() => {
       if (f.overdue) {
         if (!task.due_date) return false
         const col = store.fullKanban!.columns.find(c => c.id === Number(colId))
-        if (col?.name?.toLowerCase() === 'termine') return false
+        if (col?.name?.toLowerCase() === 'terminé') return false
         if (new Date(task.due_date) >= new Date()) return false
       }
       return true
@@ -95,6 +99,11 @@ const onTaskCreated = async (data: { title: string; priority: string; columnId: 
 
 const onTaskDeleted = async (taskId: number, columnId: number) => {
   if (isArchivedProject.value) return
+  if (!isOwner.value) {
+    taskPermError.value = true
+    setTimeout(() => { taskPermError.value = false }, 3000)
+    return
+  }
   await store.deleteTask(taskId, columnId)
 }
 
@@ -285,21 +294,23 @@ watch(projectId, async () => {
       <!-- Colonnes -->
       <div
         v-else-if="store.fullKanban"
-        class="flex gap-3 sm:gap-4 p-4 sm:p-5 h-full overflow-x-auto scrollbar-thin snap-x snap-mandatory"
+        class="flex-1 overflow-x-auto h-full scrollbar-thin"
       >
-        <KanbanColumn
-          v-for="column in store.fullKanban.columns"
-          :key="column.id"
-          :column="column"
-          :tasks="filteredBoard[column.id] ?? []"
-          :users="store.allUsers"
-          :readonly="isArchivedProject"
-          @task-clicked="openTaskModal"
-          @task-deleted="onTaskDeleted"
-          @task-created="onTaskCreated"
-          @tasks-reordered="onTasksReordered"
-          @task-moved="onTaskMoved"
-        />
+        <div class="flex gap-3 sm:gap-4 p-4 sm:p-5 min-h-full w-fit mx-auto">
+          <KanbanColumn
+            v-for="column in store.fullKanban.columns"
+            :key="column.id"
+            :column="column"
+            :tasks="filteredBoard[column.id] ?? []"
+            :users="store.allUsers"
+            :readonly="isArchivedProject"
+            @task-clicked="openTaskModal"
+            @task-deleted="onTaskDeleted"
+            @task-created="onTaskCreated"
+            @tasks-reordered="onTasksReordered"
+            @task-moved="onTaskMoved"
+          />
+        </div>
       </div>
     </div>
 
@@ -384,4 +395,19 @@ watch(projectId, async () => {
       </template>
     </AppModal>
   </div>
+
+  <!-- Toast erreur permission suppression tâche -->
+  <Teleport to="body">
+    <Transition name="toast-slide">
+      <div
+        v-if="taskPermError"
+        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-4 py-3 bg-red-600 text-white text-sm font-medium rounded-xl shadow-xl whitespace-nowrap"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        Seul le propriétaire du projet peut supprimer des tâches.
+      </div>
+    </Transition>
+  </Teleport>
 </template>
