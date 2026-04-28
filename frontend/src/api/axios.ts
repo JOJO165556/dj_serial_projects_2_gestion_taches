@@ -2,7 +2,9 @@ import axios from "axios";
 import { refreshToken } from "../services/authService";
 
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL || '/api/',
+    baseURL: import.meta.env.VITE_API_URL
+        ? `${import.meta.env.VITE_API_URL}/api/`
+        : '/api/',
     withCredentials: true,
 });
 

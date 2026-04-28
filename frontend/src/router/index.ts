@@ -25,7 +25,7 @@ router.beforeEach((to, _) => {
     const auth = useAuthStore();
 
     if (to.meta.requiresAuth && !auth.isAuthenticated) {
-        return { path: '/login', query: { redirect: to.fullPath } }
+        return { path: '/register', query: { redirect: to.fullPath } }
     }
 
     // Empecher l'acces a /login ou /register si deja connecte
