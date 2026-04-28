@@ -90,7 +90,7 @@ SIMPLE_JWT = {
 ROOT_URLCONF = 'core.urls'
 AUTH_USER_MODEL = 'users.User'
 _allowed = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
-ALLOWED_HOSTS = [h.strip() for h in _allowed if h.strip()] + [".onrender.com"]
+ALLOWED_HOSTS = [h.strip() for h in _allowed if h.strip()] + [".onrender.com", ".vercel.app"]
 
 TEMPLATES = [
     {
