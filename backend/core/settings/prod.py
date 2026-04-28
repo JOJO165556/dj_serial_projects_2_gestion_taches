@@ -5,9 +5,6 @@ from .base import *
 DEBUG = False
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
-    "https://dj-serial-projects-2-gestion-taches-dwkxtht8j.vercel.app",
-    "https://dj-serial-projects-2-gestion-taches-49pfwdqxv.vercel.app",
-    "https://dj-serial-projects-2-gestion-taches-glyyj1rzq.vercel.app",
     "https://dj-serial-projects-2-gestion-taches.vercel.app",
 ]
 CORS_ALLOWED_ORIGIN_REGEXES = []
@@ -24,9 +21,7 @@ CORS_ALLOW_HEADERS = [
     "access-control-allow-origin",
 ]
 CSRF_TRUSTED_ORIGINS = [
-    "https://dj-serial-projects-2-gestion-taches-dwkxtht8j.vercel.app",
-    "https://dj-serial-projects-2-gestion-taches-49pfwdqxv.vercel.app",
-    "https://dj-serial-projects-2-gestion-taches-glyyj1rzq.vercel.app",
+    "https://dj-serial-projects-2-gestion-taches.vercel.app",
 ] + [origin.strip().rstrip('/') for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if origin.strip()]
 
 CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
