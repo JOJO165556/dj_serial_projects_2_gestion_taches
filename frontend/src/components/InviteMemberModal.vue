@@ -41,19 +41,6 @@ const handleSubmit = () => {
     message: inviteMessage.value.trim()
   })
 }
-
-const getFriendProfile = (f: Friendship) => f.sender.id === f.receiver.id ? f.receiver : (f.sender.id === 0 ? f.receiver : f.sender) 
-// Wait, the friend profile helper needs to know the current user ID. 
-// Let's pass the helper function or just the necessary data.
-// Actually, let's just pass the pre-filtered friends list with a simpler structure.
-// Or just pass the current user's ID to the component.
-
-const getFriendId = (f: Friendship) => f.sender.username === '...' ? f.receiver.id : f.sender.id
-</script>
-
-<script lang="ts">
-// Helper to get friend profile if we don't have auth store here
-// But it's easier to pass the already formatted list of friends
 </script>
 
 <template>

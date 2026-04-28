@@ -21,9 +21,6 @@ const taskPermError = ref(false)
 
 // Filtres
 const filters = ref({ search: '', priority: '' as Priority | '', overdue: false, assignee: '' })
-const hasFilters = computed(() =>
-  !!(filters.value.search || filters.value.priority || filters.value.overdue || filters.value.assignee)
-)
 
 const resetFilters = () => {
   filters.value = { search: '', priority: '', overdue: false, assignee: '' }

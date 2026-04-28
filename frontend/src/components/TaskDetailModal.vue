@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import AppModal from './AppModal.vue'
-import type { Task, Priority } from '@/types/kanban'
+import type { Task } from '@/types/kanban'
 import type { User } from '@/types/auth'
 
 const props = defineProps<{
