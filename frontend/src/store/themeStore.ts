@@ -3,8 +3,8 @@ import { ref, watch } from "vue";
 
 export const useThemeStore = defineStore("theme", () => {
   const savedTheme = localStorage.getItem("theme");
-  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  const isDark = ref(savedTheme ? savedTheme === "dark" : prefersDark);
+  // Thème clair par défaut 
+  const isDark = ref(savedTheme === "dark");
 
   const apply = () => {
     if (isDark.value) {

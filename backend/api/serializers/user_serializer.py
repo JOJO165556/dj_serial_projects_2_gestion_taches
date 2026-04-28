@@ -7,7 +7,7 @@ class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=False)
     class Meta:
         model = User
-        fields = ["id", "username", "email", "first_name", "last_name", "role", "password"]
+        fields = ["id", "username", "email", "first_name", "last_name", "role", "password", "avatar", "bio"]
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)
