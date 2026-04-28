@@ -3,9 +3,10 @@ import os
 from .base import *
 
 DEBUG = False
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGIN_REGEXES = [
-    r".*vercel\.app$",
+    r"^https:\/\/.*\.vercel\.app$",
+    r"^https:\/\/.*vercel\.app$",
 ]
 CORS_ALLOW_HEADERS = [
     "accept",
@@ -22,7 +23,12 @@ CORS_ALLOW_HEADERS = [
 CSRF_TRUSTED_ORIGINS = [
     "https://dj-serial-projects-2-gestion-taches-dwkxtht8j.vercel.app",
     "https://dj-serial-projects-2-gestion-taches-49pfwdqxv.vercel.app",
+    "https://dj-serial-projects-2-gestion-taches-glyyj1rzq.vercel.app",
 ] + [origin.strip().rstrip('/') for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if origin.strip()]
+
+CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
+SECURE_REFERRER_POLICY = "no-referrer-when-downgrade"
+
 # On s'assure que les domaines Vercel sont aussi dans CSRF_TRUSTED_ORIGINS si besoin
 # mais CSRF ne supporte pas nativement les regex, donc il faut les lister manuellement dans l'env var.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
