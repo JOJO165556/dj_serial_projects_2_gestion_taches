@@ -70,10 +70,21 @@ const confirmLogout = async () => {
         <!-- Séparateur -->
         <div class="w-px h-4 bg-gray-200 dark:bg-gray-700" />
 
-        <!-- Utilisateur -->
-        <span v-if="auth.user" class="hidden sm:block text-xs font-medium text-gray-500 dark:text-gray-400">
-          {{ auth.user.username }}
-        </span>
+        <!-- Liens Profil et Amis -->
+        <div v-if="auth.isAuthenticated" class="hidden sm:flex items-center gap-4">
+          <router-link
+            to="/profile"
+            class="text-xs font-medium text-gray-600 hover:text-violet-600 dark:text-gray-300 dark:hover:text-violet-400 transition"
+          >
+            {{ auth.user?.username }} (Profil)
+          </router-link>
+          <router-link
+            to="/friends"
+            class="text-xs font-medium text-gray-600 hover:text-violet-600 dark:text-gray-300 dark:hover:text-violet-400 transition"
+          >
+            Mes Relations
+          </router-link>
+        </div>
 
         <!-- Déconnexion -->
         <button

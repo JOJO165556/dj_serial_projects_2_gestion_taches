@@ -7,6 +7,9 @@ import InviteView from "../views/InviteView.vue";
 import MagicLinkView from "../views/MagicLinkView.vue";
 import { useAuthStore } from "../store/authStore";
 
+import ProfileView from "../views/ProfileView.vue";
+import FriendsView from "../views/FriendsView.vue";
+
 const routes = [
     { path: "/login", component: LoginView },
     { path: "/register", component: RegisterView },
@@ -14,6 +17,8 @@ const routes = [
     { path: "/", component: Dashboard, meta: { requiresAuth: true } },
     { path: "/kanban/:id", component: KanbanView, meta: { requiresAuth: true } },
     { path: "/invite/:token", component: InviteView, meta: { requiresAuth: true } },
+    { path: "/profile", component: ProfileView, meta: { requiresAuth: true } },
+    { path: "/friends", component: FriendsView, meta: { requiresAuth: true } },
 ];
 
 const router = createRouter({

@@ -136,7 +136,16 @@ const onTasksReordered = async (tasks: Task[], columnId: number) => {
 onMounted(async () => {
   await store.fetchBoard(projectId.value)
   store.connectWebSocket(projectId.value)
-  if (!store.allUsers.length) await store.fetchUsers()
+})
+
+// Les utilisateurs sélectionnables sont limités aux membres du projet
+const projectMembers = computed(() => {
+  if (!store.fullKanban?.project) return []
+  const owner = store.fullKanban.project.owner
+  const members = store.fullKanban.project.members || []
+  const memberIds = new Set(members.map((m: any) => m.id))
+  if (!memberIds.has(owner.id)) return [owner, ...members]
+  return members
 })
 
 onUnmounted(() => {
@@ -232,7 +241,7 @@ watch(projectId, async () => {
           class="px-2.5 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-violet-500 transition w-full sm:w-auto"
         >
           <option value="">Assigné</option>
-          <option v-for="u in store.allUsers" :key="u.id" :value="String(u.id)">{{ u.username }}</option>
+          <option v-for="u in projectMembers" :key="u.id" :value="String(u.id)">{{ u.username }}</option>
         </select>
 
         <label class="flex items-center gap-1.5 cursor-pointer select-none py-1 sm:py-0">
@@ -302,7 +311,7 @@ watch(projectId, async () => {
             :key="column.id"
             :column="column"
             :tasks="filteredBoard[column.id] ?? []"
-            :users="store.allUsers"
+            :users="projectMembers"
             :readonly="isArchivedProject"
             @task-clicked="openTaskModal"
             @task-deleted="onTaskDeleted"
@@ -371,7 +380,7 @@ watch(projectId, async () => {
             class="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500 transition"
           >
             <option :value="null">Non assigné</option>
-            <option v-for="user in store.allUsers" :key="user.id" :value="user.id">
+            <option v-for="user in projectMembers" :key="user.id" :value="user.id">
               {{ user.username }}
             </option>
           </select>

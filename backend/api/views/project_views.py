@@ -70,7 +70,18 @@ class ProjectViewSet(ModelViewSet):
         project = self.get_object()
 
         user_id = request.data.get("user_id")
-        user = User.objects.get(id=user_id)
+        email = request.data.get("email")
+        
+        if user_id:
+            user = User.objects.filter(id=user_id).first()
+        elif email:
+            user = User.objects.filter(email=email).first()
+        else:
+            return Response({"error": "Veuillez fournir un user_id ou un email."}, status=400)
+            
+        if not user:
+            return Response({"error": "Utilisateur introuvable."}, status=404)
+
         custom_message = request.data.get("message", "")
 
         try:

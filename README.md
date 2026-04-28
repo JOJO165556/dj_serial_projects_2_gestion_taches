@@ -145,14 +145,24 @@ VITE_API_URL=http://localhost:8000   # En développement
    - La base **PostgreSQL** (`gestion-taches-db`)
    - Le service web **Django** (`gestion-taches-backend`)
    - La connexion `DATABASE_URL` est injectée automatiquement
-4. Renseigner manuellement dans **Environment** :
-   - `ALLOWED_HOSTS` → `gestion-taches-backend.onrender.com`
-   - `FRONTEND_URL` → URL Vercel
-   - `CORS_ALLOWED_ORIGINS` → URL Vercel
-   - `CSRF_TRUSTED_ORIGINS` → URL Vercel + URL Render
-   - `EMAIL_HOST_USER` → adresse Gmail
-   - `EMAIL_HOST_PASSWORD` → mot de passe d'application Gmail
-   - `DEFAULT_FROM_EMAIL` → adresse Gmail
+
+### CI/CD avec GitHub Actions
+Un workflow de déploiement continu (`.github/workflows/deploy.yml`) est configuré pour déployer automatiquement le backend sur Render à chaque push sur `main`.
+Pour l'activer :
+1. Allez dans les paramètres de votre service web sur **Render** > **Settings** > **Deploy Hook**.
+2. Copiez l'URL du webhook.
+3. Allez dans votre dépôt **GitHub** > **Settings** > **Secrets and variables** > **Actions** > **New repository secret**.
+4. Nommez le secret `RENDER_DEPLOY_HOOK` et collez l'URL Render en valeur.
+
+**Étape 5 : Variables d'environnement**
+Renseignez manuellement dans **Environment** (sur Render) :
+- `ALLOWED_HOSTS` → `votre-backend.onrender.com`
+- `FRONTEND_URL` → URL de votre frontend (ex: `https://votre-front.vercel.app`)
+- `CORS_ALLOWED_ORIGINS` → URL de votre frontend
+- `CSRF_TRUSTED_ORIGINS` → URL de votre frontend + URL Render
+- `EMAIL_HOST_USER` → votre adresse Gmail
+- `EMAIL_HOST_PASSWORD` → mot de passe d'application Gmail
+- `DEFAULT_FROM_EMAIL` → votre adresse Gmail
 
 ### Vercel (Frontend)
 
@@ -161,7 +171,7 @@ VITE_API_URL=http://localhost:8000   # En développement
 3. **Root Directory** : `frontend`
 4. **Framework** : Vite (détecté automatiquement)
 5. Ajouter la variable d'environnement :
-   - `VITE_API_URL` → `https://gestion-taches-backend.onrender.com`
+   - `VITE_API_URL` → `https://votre-backend.onrender.com`
 6. Déployer
 
 Le fichier `vercel.json` gère le routing SPA (toutes les routes redirigent vers `index.html`).
