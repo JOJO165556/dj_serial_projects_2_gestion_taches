@@ -9,6 +9,7 @@ services:
     name: gestion-taches-backend
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
     plan: starter
     healthCheckPath: /api/docs/
     envVars:
