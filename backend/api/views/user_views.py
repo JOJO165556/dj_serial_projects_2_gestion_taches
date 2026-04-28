@@ -28,6 +28,14 @@ User = get_user_model()
     update=extend_schema(summary="Mettre à jour un utilisateur", tags=["Utilisateurs"]),
     partial_update=extend_schema(summary="Mise à jour partielle", tags=["Utilisateurs"]),
     destroy=extend_schema(summary="Supprimer un utilisateur", tags=["Utilisateurs"]),
+    list=extend_schema(
+        summary="Liste des utilisateurs / Recherche",
+        description="Par défaut, ne retourne que l'utilisateur connecté. Utilisez `search` pour chercher d'autres utilisateurs par leur username.",
+        parameters=[
+            OpenApiParameter(name="search", description="Rechercher par @username (partiel)", required=False, type=str),
+        ],
+        tags=["Utilisateurs"]
+    ),
 )
 class UserViewSet(ModelViewSet):
     queryset = User.objects.all()
@@ -41,6 +49,7 @@ class UserViewSet(ModelViewSet):
         
         queryset = User.objects.filter(is_active=True).order_by("username")
         
+        # Filtre de recherche par nom d'utilisateur (@username)
         search_username = self.request.query_params.get("search", None)
         if search_username:
             # Recherche d'amis par username

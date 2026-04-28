@@ -8,12 +8,14 @@ const loading = ref(false)
 const successMsg = ref('')
 const errorMsg = ref('')
 
+// Formulaire d'édition
 const form = ref({
   username: '',
   first_name: '',
   last_name: ''
 })
 
+// Pré-remplir le formulaire avec les données actuelles
 onMounted(() => {
   if (auth.user) {
     form.value.username = auth.user.username
@@ -22,6 +24,7 @@ onMounted(() => {
   }
 })
 
+// Enregistrer les modifications du profil
 const saveProfile = async () => {
   if (!auth.user) return
   loading.value = true
@@ -30,7 +33,7 @@ const saveProfile = async () => {
   
   try {
     const updated = await updateProfile(auth.user.id, form.value)
-    // Update local user state
+    // Mettre à jour l'état local de l'utilisateur
     if (auth.user) {
       auth.user.username = updated.username
       auth.user.first_name = updated.first_name

@@ -3,9 +3,11 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from apps.users.models import Friendship
 from api.serializers.friend_serializer import FriendshipSerializer
 
+@extend_schema(tags=["Relations"])
 class FriendshipViewSet(viewsets.ModelViewSet):
     serializer_class = FriendshipSerializer
     permission_classes = [IsAuthenticated]
@@ -15,9 +17,10 @@ class FriendshipViewSet(viewsets.ModelViewSet):
         if not user or not user.is_authenticated:
             return Friendship.objects.none()
         
-        # Retourne les amitiés impliquant l'utilisateur (envoyées ou reçues)
+        # Retourne toutes les relations impliquant l'utilisateur (envoyées ou reçues)
         return Friendship.objects.filter(Q(sender=user) | Q(receiver=user)).order_by('-created_at')
 
+    @extend_schema(summary="Accepter une demande d'ami")
     @action(detail=True, methods=['post'])
     def accept(self, request, pk=None):
         friendship = self.get_object()
@@ -31,6 +34,7 @@ class FriendshipViewSet(viewsets.ModelViewSet):
         friendship.save()
         return Response({"status": "Demande d'ami acceptée."})
 
+    @extend_schema(summary="Décliner ou annuler une demande d'ami")
     @action(detail=True, methods=['post'])
     def decline(self, request, pk=None):
         friendship = self.get_object()
