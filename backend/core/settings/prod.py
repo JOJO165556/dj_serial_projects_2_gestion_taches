@@ -4,10 +4,13 @@ from .base import *
 
 DEBUG = False
 CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https:\/\/.*\.vercel\.app$",
-    r"^https:\/\/.*vercel\.app$",
+CORS_ALLOWED_ORIGINS = [
+    "https://dj-serial-projects-2-gestion-taches-dwkxtht8j.vercel.app",
+    "https://dj-serial-projects-2-gestion-taches-49pfwdqxv.vercel.app",
+    "https://dj-serial-projects-2-gestion-taches-glyyj1rzq.vercel.app",
+    "https://dj-serial-projects-2-gestion-taches.vercel.app",
 ]
+CORS_ALLOWED_ORIGIN_REGEXES = []
 CORS_ALLOW_HEADERS = [
     "accept",
     "accept-encoding",
