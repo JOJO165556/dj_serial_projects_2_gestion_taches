@@ -10,12 +10,7 @@ if DEBUG:
         'http://localhost:5173', # Port par défaut pour Vue.js/Vite
     ]
 
-INSTALLED_APPS += [
-    'corsheaders',
-    'rest_framework_simplejwt.token_blacklist',
-]
 
-MIDDLEWARE.insert(0, 'corsheaders.middleware.CorsMiddleware')
 
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
