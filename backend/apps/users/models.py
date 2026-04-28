@@ -10,6 +10,8 @@ class User(AbstractUser):
     )
     
     role = models.CharField(max_length=10, choices=ROLES_CHOICES, default="reader")
+    avatar = models.ImageField(upload_to="avatars/", null=True, blank=True)
+    bio = models.TextField(max_length=500, blank=True)
 
 class Friendship(models.Model):
     STATUS_CHOICES = (

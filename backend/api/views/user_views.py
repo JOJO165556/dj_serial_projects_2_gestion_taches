@@ -15,14 +15,13 @@ from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from drf_spectacular.utils import extend_schema, extend_schema_view
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
 from django.conf import settings
 
 User = get_user_model()
 
 
 @extend_schema_view(
-    list=extend_schema(summary="Lister les utilisateurs", tags=["Utilisateurs"]),
     create=extend_schema(summary="Créer un utilisateur", tags=["Utilisateurs"]),
     retrieve=extend_schema(summary="Détail d'un utilisateur", tags=["Utilisateurs"]),
     update=extend_schema(summary="Mettre à jour un utilisateur", tags=["Utilisateurs"]),
