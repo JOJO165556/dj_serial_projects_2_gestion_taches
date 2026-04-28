@@ -38,7 +38,16 @@ class UserViewSet(ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return User.objects.none()
-        return User.objects.filter(is_active=True).order_by("username")
+        
+        queryset = User.objects.filter(is_active=True).order_by("username")
+        
+        search_username = self.request.query_params.get("search", None)
+        if search_username:
+            # Recherche d'amis par username
+            return queryset.filter(username__icontains=search_username).exclude(id=user.id)
+            
+        # Par défaut, on ne retourne que soi-même pour protéger la vie privée
+        return queryset.filter(id=user.id)
 
     def perform_create(self, serializer):
         user = create_user(**serializer.validated_data)

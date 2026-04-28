@@ -7,7 +7,16 @@ class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=False)
     class Meta:
         model = User
-        fields = ["id", "username", "email", "role", "password"]
+        fields = ["id", "username", "email", "first_name", "last_name", "role", "password"]
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        request = self.context.get('request')
+        # Cacher l'email si la requête n'est pas faite par l'utilisateur lui-même
+        if request and hasattr(request, "user") and request.user.is_authenticated:
+            if request.user.id != instance.id:
+                ret.pop('email', None)
+        return ret
 
     def validate_password(self, value):
         try:

@@ -8,7 +8,6 @@ import {
   updateTask as apiUpdateTask,
   deleteTask as apiDeleteTask,
   reorderTasks as apiReorderTasks,
-  getUsers,
 } from '@/services/kanbanService'
 
 const buildWsUrl = (projectId: number) => {
@@ -26,7 +25,6 @@ export const useKanbanStore = defineStore('kanban', () => {
   const fullKanban = ref<KanbanBoard | null>(null)
   const loading = ref(false)
   const error = ref('')
-  const allUsers = ref<User[]>([])
 
   let ws: WebSocket | null = null
 
@@ -45,14 +43,6 @@ export const useKanbanStore = defineStore('kanban', () => {
     }
   }
 
-  const fetchUsers = async () => {
-    try {
-      const res = await getUsers()
-      allUsers.value = res.data
-    } catch (e) {
-      console.error('Erreur chargement utilisateurs', e)
-    }
-  }
 
   const reset = () => {
     fullKanban.value = null
@@ -151,9 +141,7 @@ export const useKanbanStore = defineStore('kanban', () => {
     fullKanban,
     loading,
     error,
-    allUsers,
     fetchBoard,
-    fetchUsers,
     reset,
     connectWebSocket,
     disconnectWebSocket,

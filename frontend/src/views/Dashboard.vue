@@ -2,6 +2,8 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/authStore'
+import { getFriendships } from '@/services/friendService'
+import type { Friendship } from '@/services/friendService'
 import {
   getProjects,
   createProject,
@@ -30,12 +32,19 @@ const memberModal = ref(false)
 
 const newProject = ref({ name: '', description: '' })
 const editData = ref<Partial<Project & { id: number }> | null>(null)
+// -- Friends helper
+const getFriendProfile = (f: Friendship) => f.sender.id === auth.user?.id ? f.receiver : f.sender
+const getFriendId = (f: Friendship) => getFriendProfile(f).id
+const getFriendUsername = (f: Friendship) => getFriendProfile(f).username
+
 const selectedProjectId = ref<number | null>(null)
 const selectedUserId = ref<number | null>(null)
+const inviteEmail = ref('')
 const inviteMessage = ref('')
 const inviteLink = ref('')
 const inviteResult = ref<InvitationCreateResult | null>(null)
 const inviteError = ref('')
+const myFriends = ref<Friendship[]>([])
 const submitting = ref(false)
 
 const fetchProjects = async () => {
@@ -52,6 +61,9 @@ const fetchProjects = async () => {
 
 onMounted(async () => {
   await fetchProjects()
+  getFriendships().then(res => {
+    myFriends.value = res.filter(f => f.status === 'accepted')
+  }).catch(() => {})
   try {
     const res = await getUsers()
     allUsers.value = res.data
@@ -108,14 +120,23 @@ const handleDelete = async (id: number, ownerId: number) => {
 }
 
 const handleAddMember = async () => {
-  if (!selectedProjectId.value || !selectedUserId.value) return
+  if (!selectedProjectId.value) return
   submitting.value = true
   inviteError.value = ''
   try {
-    const res = await addProjectMember(selectedProjectId.value, {
-      userId: selectedUserId.value,
+    const payload: any = {
       message: inviteMessage.value.trim(),
-    })
+    }
+    if (selectedUserId.value) {
+      payload.user_id = selectedUserId.value
+    } else if (inviteEmail.value) {
+      payload.email = inviteEmail.value.trim()
+    } else {
+      inviteError.value = "Veuillez sélectionner un ami ou entrer une adresse email."
+      return
+    }
+
+    const res = await addProjectMember(selectedProjectId.value, payload)
     inviteResult.value = res.data
     if (res.data?.token) {
       inviteLink.value = `${window.location.origin}/invite/${res.data.token}`
@@ -136,6 +157,7 @@ const openEditModal = (p: Project) => {
 const openMemberModal = (id: number) => {
   selectedProjectId.value = id
   selectedUserId.value = null
+  inviteEmail.value = ''
   inviteMessage.value = ''
   inviteLink.value = ''
   inviteResult.value = null
@@ -457,22 +479,31 @@ const getBandColor = (id: number) => bandColors[id % bandColors.length]
       <!-- Formulaire -->
       <div v-else class="space-y-4">
         <div>
-          <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Utilisateur</label>
+          <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Inviter un Ami (Optionnel)</label>
           <select
             v-model="selectedUserId"
             class="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500 transition"
           >
-            <option :value="null" disabled>Sélectionner un utilisateur</option>
-            <option v-for="u in allUsers" :key="u.id" :value="u.id">
-              {{ u.username }} — {{ u.email }}
+            <option :value="null">-- Choisir dans mes relations --</option>
+            <option v-for="f in myFriends" :key="f.id" :value="getFriendId(f)">
+              {{ getFriendUsername(f) }}
             </option>
           </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Ou saisir une adresse email (si non ami)</label>
+          <input
+            v-model="inviteEmail"
+            type="email"
+            placeholder="exemple@email.com"
+            class="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 transition"
+          />
         </div>
         <div>
           <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Message</label>
           <textarea
             v-model="inviteMessage"
-            rows="4"
+            rows="3"
             placeholder="Ajoutez un petit contexte pour l'invitation..."
             class="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 transition resize-none"
           />

@@ -10,3 +10,23 @@ class User(AbstractUser):
     )
     
     role = models.CharField(max_length=10, choices=ROLES_CHOICES, default="reader")
+
+class Friendship(models.Model):
+    STATUS_CHOICES = (
+        ("pending", "En attente"),
+        ("accepted", "Accepté"),
+        ("declined", "Refusé"),
+    )
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_friend_requests")
+    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_friend_requests")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="pending")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("sender", "receiver")
+        verbose_name = "Ami"
+        verbose_name_plural = "Amis"
+
+    def __str__(self):
+        return f"{self.sender.username} -> {self.receiver.username} ({self.status})"
