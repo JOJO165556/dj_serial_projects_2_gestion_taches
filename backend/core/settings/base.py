@@ -86,7 +86,8 @@ SIMPLE_JWT = {
 
 ROOT_URLCONF = 'core.urls'
 AUTH_USER_MODEL = 'users.User'
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+_allowed = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+ALLOWED_HOSTS = [h.strip() for h in _allowed if h.strip()] + [".onrender.com"]
 
 TEMPLATES = [
     {
