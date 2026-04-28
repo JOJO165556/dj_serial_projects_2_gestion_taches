@@ -62,7 +62,7 @@ class ProjectViewSet(ModelViewSet):
 
     @extend_schema(
         summary="Ajouter un membre au projet",
-        description="Crée une invitation pour un utilisateur existant via son `user_id` et retourne le token d'invitation.",
+        description="Crée une invitation pour un utilisateur via son `user_id` ou son `email` et retourne le token d'invitation.",
         tags=["Projets"],
     )
     @action(detail=True, methods=["post"])

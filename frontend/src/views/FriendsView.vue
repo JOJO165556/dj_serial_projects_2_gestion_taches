@@ -6,12 +6,14 @@ import type { Friendship } from '@/services/friendService'
 import { useAuthStore } from '@/store/authStore'
 import type { User } from '@/types/auth'
 
+// État réactif
 const auth = useAuthStore()
 const query = ref('')
 const searchResults = ref<User[]>([])
 const friendships = ref<Friendship[]>([])
 const searching = ref(false)
 
+// Charger la liste des amitiés au démarrage
 const loadFriendships = async () => {
   try {
     friendships.value = await getFriendships()
@@ -24,6 +26,7 @@ onMounted(() => {
   loadFriendships()
 })
 
+// Rechercher des utilisateurs par username
 const handleSearch = async () => {
   if (query.value.length < 2) {
     searchResults.value = []
@@ -39,6 +42,7 @@ const handleSearch = async () => {
   }
 }
 
+// Envoyer une demande d'ami
 const sendRequest = async (userId: number) => {
   try {
     await sendFriendRequest(userId)
@@ -49,6 +53,7 @@ const sendRequest = async (userId: number) => {
   }
 }
 
+// Accepter une demande
 const acceptRequest = async (id: number) => {
   try {
     await acceptFriendRequest(id)
@@ -58,6 +63,7 @@ const acceptRequest = async (id: number) => {
   }
 }
 
+// Refuser ou annuler une demande
 const declineRequest = async (id: number) => {
   try {
     await declineFriendRequest(id)
@@ -67,20 +73,16 @@ const declineRequest = async (id: number) => {
   }
 }
 
-// Computeds for different friendship states
+// Propriétés calculées pour filtrer les amitiés par statut
 const pendingReceived = computed(() => 
   friendships.value.filter(f => f.status === 'pending' && f.receiver.id === auth.user?.id)
-)
-
-const pendingSent = computed(() => 
-  friendships.value.filter(f => f.status === 'pending' && f.sender.id === auth.user?.id)
 )
 
 const acceptedFriends = computed(() => 
   friendships.value.filter(f => f.status === 'accepted')
 )
 
-// Helper to get friend's profile from a friendship object
+// Récupérer le profil de l'ami (celui qui n'est pas l'utilisateur actuel)
 const getFriendProfile = (f: Friendship) => {
   return f.sender.id === auth.user?.id ? f.receiver : f.sender
 }

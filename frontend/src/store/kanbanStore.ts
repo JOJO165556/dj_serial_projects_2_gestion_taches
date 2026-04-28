@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { KanbanBoard, Task, CreateTaskData, UpdateTaskData } from '@/types/kanban'
-import type { User } from '@/types/auth'
 import {
   getProjectKanban,
   createTask as apiCreateTask,
