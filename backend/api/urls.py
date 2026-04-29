@@ -9,6 +9,7 @@ from api.views.user_views import (
     MagicLinkVerifyView,
     CookieTokenObtainPairView,
     CookieTokenRefreshView,
+    HealthCheckView,
 )
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers
@@ -46,6 +47,7 @@ from api.views.task_views import reorder_tasks
 from api.views.project_views import ProjectInvitationView
 
 urlpatterns = [
+    path("health/", HealthCheckView.as_view(), name="health_check"),
     path("tasks/reorder/", reorder_tasks, name="reorder_tasks"),
     path("projects/invitations/<uuid:token>/", ProjectInvitationView.as_view(), name="project_invitation"),
 

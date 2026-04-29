@@ -162,6 +162,19 @@ class MeView(APIView):
 
 
 @extend_schema(
+    summary="Vérification de l'état du serveur",
+    description="Endpoint public pour garder le serveur éveillé ou vérifier sa disponibilité.",
+    tags=["Système"],
+)
+class HealthCheckView(APIView):
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+
+    def get(self, request):
+        return Response({"status": "ok", "message": "Server is awake!"}, status=status.HTTP_200_OK)
+
+
+@extend_schema(
     summary="Déconnexion",
     description=(
         "Invalide le `refresh` token côté serveur (blacklist). "
