@@ -31,5 +31,5 @@ class ProjectApiTests(APITestCase):
         self.assertTrue(project.members.filter(id=self.user.id).exists())
         self.assertEqual(
             list(Column.objects.filter(project=project).values_list("name", flat=True)),
-            ["To Do", "In Progress", "Done"],
+            ["A faire", "En cours", "Terminé"],
         )

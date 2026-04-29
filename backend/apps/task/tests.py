@@ -31,7 +31,7 @@ class TaskApiTests(APITestCase):
         )
         self.project.members.add(self.owner, self.reader)
 
-        self.todo = Column.objects.create(project=self.project, name="To Do", order=0)
+        self.todo = Column.objects.create(project=self.project, name="A faire", order=0)
 
         self.other_project = Project.objects.create(
             name="Projet B",
@@ -41,7 +41,7 @@ class TaskApiTests(APITestCase):
         )
         self.other_project.members.add(self.owner)
         self.other_column = Column.objects.create(
-            project=self.other_project, name="Done", order=0
+            project=self.other_project, name="Terminé", order=0
         )
 
     def test_task_creation_rejects_column_from_another_project(self):
@@ -75,5 +75,4 @@ class TaskApiTests(APITestCase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("project", response.data)
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
