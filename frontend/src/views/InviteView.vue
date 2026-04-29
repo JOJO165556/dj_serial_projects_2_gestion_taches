@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '@/store/authStore'
 import { getInvitation, respondToInvitation } from '@/services/kanbanService'
 import type { Invitation } from '@/types/kanban'
 
 const route = useRoute()
 const router = useRouter()
+const auth = useAuthStore()
 const token = route.params.token as string
 
 const invitation = ref<Invitation | null>(null)
@@ -108,21 +110,58 @@ const respond = async (action: 'accept' | 'decline') => {
           </p>
 
           <!-- Détails projet -->
-          <div class="bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-100 dark:border-gray-700 p-4 mb-6">
-            <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Projet</p>
-            <p class="text-base font-semibold text-gray-900 dark:text-white">{{ invitation.project.name }}</p>
-            <p v-if="invitation.project.description" class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
+          <div class="bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-100 dark:border-gray-700 p-5 mb-6">
+            <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Aperçu du projet</p>
+            <p class="text-lg font-bold text-gray-900 dark:text-white mb-1">{{ invitation.project.name }}</p>
+            <p v-if="invitation.project.description" class="text-sm text-gray-500 dark:text-gray-400 mb-4">
               {{ invitation.project.description }}
             </p>
-          </div>
+            
+            <!-- Colonnes Kanban -->
+            <div class="flex flex-wrap gap-2 mb-4">
+               <div v-for="col in (invitation.project as any).columns" :key="col.id" 
+                    class="px-2 py-1 rounded-md bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-[10px] font-medium flex items-center gap-1.5 shadow-sm">
+                 <span class="w-2 h-2 rounded-full" :style="{ backgroundColor: col.color }"></span>
+                 {{ col.name }}
+               </div>
+            </div>
 
-          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 sm:gap-3 text-xs text-gray-500 dark:text-gray-400 mb-6">
-            <span class="break-all">Invite pour {{ invitation.user.email }}</span>
-            <span class="capitalize">{{ invitation.status }}</span>
+            <div class="flex items-center gap-2 text-xs text-gray-400">
+               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+               {{ (invitation.project as any).members_count }} membres
+            </div>
           </div>
 
           <!-- Actions -->
-          <div class="flex flex-col-reverse sm:flex-row gap-3">
+          <div v-if="!invitation.is_logged_in" class="flex flex-col-reverse sm:flex-row gap-3">
+             <button
+              @click="respond('decline')"
+              :disabled="responding"
+              class="flex-1 py-2.5 text-sm font-medium rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors"
+            >
+              Refuser
+            </button>
+            <button
+              @click="router.push({ path: '/register', query: { redirect: route.fullPath, token: token } })"
+              class="flex-1 py-2.5 text-sm font-bold bg-violet-600 hover:bg-violet-700 text-white rounded-xl shadow-lg shadow-violet-500/20 transition-all"
+            >
+              Accepter & Rejoindre
+            </button>
+          </div>
+
+          <div v-else-if="!invitation.is_correct_user" class="space-y-4">
+             <p class="p-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-xs rounded-lg border border-red-100 dark:border-red-800">
+              Cette invitation est destinée à <strong>{{ invitation.user_email }}</strong>, mais vous êtes connecté en tant que <strong>{{ auth.user?.email }}</strong>.
+            </p>
+             <button
+              @click="auth.logout().then(() => router.push({ path: '/login', query: { redirect: route.fullPath } }))"
+              class="w-full py-2.5 text-sm font-medium border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+              Changer de compte
+            </button>
+          </div>
+
+          <div v-else class="flex flex-col-reverse sm:flex-row gap-3">
             <button
               @click="respond('decline')"
               :disabled="responding"

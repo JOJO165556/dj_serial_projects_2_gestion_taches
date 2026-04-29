@@ -71,5 +71,11 @@ export const useAuthStore = defineStore("auth", {
                 this.isLoading = false;
             }
         },
+
+        setTokens(_accessToken: string, user: User) {
+            this.user = user;
+            this.isAuthenticated = true;
+            this.isLoading = false;
+        },
     },
 });

@@ -1,4 +1,4 @@
-from rest_framework import generics, permissions, status
+from rest_framework import generics, permissions, status, serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
@@ -78,6 +78,21 @@ class RegisterView(generics.CreateAPIView):
     permission_classes = [permissions.AllowAny]
     authentication_classes = []
 
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 201:
+            # Création automatique des tokens pour connexion immédiate
+            user = User.objects.get(username=response.data['username'])
+            refresh = RefreshToken.for_user(user)
+            
+            response.data['access'] = str(refresh.access_token)
+            response.data['user'] = UserSerializer(user).data
+            
+            # Attacher le cookie de refresh
+            _set_refresh_cookie(response, str(refresh))
+            
+        return response
+
 
 @extend_schema(
     summary="Demander un magic link",
@@ -85,6 +100,7 @@ class RegisterView(generics.CreateAPIView):
     tags=["Authentification"],
 )
 class MagicLinkRequestView(APIView):
+    serializer_class = MagicLinkRequestSerializer
     permission_classes = [permissions.AllowAny]
     authentication_classes = []
 
@@ -106,6 +122,7 @@ class MagicLinkRequestView(APIView):
     tags=["Authentification"],
 )
 class MagicLinkVerifyView(APIView):
+    serializer_class = MagicLinkVerifySerializer
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
@@ -136,6 +153,7 @@ class MagicLinkVerifyView(APIView):
     tags=["Authentification"],
 )
 class MeView(APIView):
+    serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
@@ -154,6 +172,7 @@ class MeView(APIView):
     responses={204: None},
 )
 class LogoutView(APIView):
+    serializer_class = serializers.Serializer # Serializer vide pour Swagger
     authentication_classes = []
     permission_classes = [permissions.AllowAny]
 

@@ -2,10 +2,14 @@
 import { ref } from 'vue'
 import { register } from '@/services/authService'
 import { useThemeStore } from '@/store/themeStore'
-import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/store/authStore'
+import { useRoute, useRouter } from 'vue-router'
+import { respondToInvitation } from '@/services/kanbanService'
 
 const theme = useThemeStore()
 const router = useRouter()
+const route = useRoute()
+const auth = useAuthStore()
 
 const form = ref({ username: '', email: '', password: '', passwordConfirm: '' })
 const errors = ref<string[]>([])
@@ -21,8 +25,29 @@ const submit = async () => {
   }
   loading.value = true
   try {
-    await register({ username: form.value.username, email: form.value.email, password: form.value.password })
-    router.push('/login')
+    const res = await register({ 
+      username: form.value.username, 
+      email: form.value.email, 
+      password: form.value.password 
+    })
+    
+    // Connexion automatique avec les tokens reçus
+    auth.setTokens(res.data.access, res.data.user)
+    
+    // Si on vient d'une invitation, on l'accepte automatiquement
+    const inviteToken = route.query.token as string
+    if (inviteToken) {
+      try {
+        await respondToInvitation(inviteToken, 'accept')
+      } catch (e) {
+        console.error("Erreur auto-accept invitation:", e)
+      }
+    }
+
+    // Redirection
+    const redirectPath = (route.query.redirect as string) || '/'
+    router.push(redirectPath === route.fullPath ? '/' : redirectPath)
+    
   } catch (err: any) {
     const data = err?.response?.data
     if (!data) {

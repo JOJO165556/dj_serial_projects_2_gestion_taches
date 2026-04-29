@@ -5,8 +5,12 @@ export const register = async (data: {
     username: string;
     email: string;
     password: string;
-}): Promise<void> => {
-    await api.post("auth/register/", data);
+}): Promise<any> => {
+    const res = await api.post("auth/register/", data);
+    if (res.data.access) {
+        setAccessToken(res.data.access);
+    }
+    return res;
 };
 
 export const login = async (data: {

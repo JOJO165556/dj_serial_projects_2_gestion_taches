@@ -76,26 +76,33 @@ const handleSubmit = () => {
     <!-- Formulaire -->
     <div v-else class="space-y-4">
       <div>
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Inviter un Ami (Optionnel)</label>
+        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Inviter un Ami</label>
         <select
           v-model="selectedUserId"
           class="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500 transition"
         >
-          <option :value="null">-- Choisir dans mes relations --</option>
+          <option :value="null">Choisir dans mes relations</option>
           <option v-for="f in friends" :key="f.id" :value="f.sender.username === '...' ? f.receiver.id : f.sender.id">
              <!-- Note: labels should be passed pre-formatted -->
              {{ f.sender.username }} <!-- simplified for now, will fix in Dashboard.vue passing -->
           </option>
         </select>
       </div>
+      <!-- Champ Email -->
       <div>
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Ou saisir une adresse email</label>
+        <label for="email" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
+          Inviter par e-mail
+        </label>
         <input
+          id="email"
           v-model="inviteEmail"
           type="email"
-          placeholder="exemple@email.com"
-          class="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 transition"
+          placeholder="destinataire@exemple.com"
+          class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all outline-none"
         />
+        <p class="mt-1.5 text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
+          Invitez n'importe qui, même s'il n'a pas encore de compte TaskFlow.
+        </p>
       </div>
       <div>
         <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Message</label>

@@ -42,4 +42,8 @@ CSRF_COOKIE_SAMESITE = "None"
 # JWT refresh token cookie cross-origin
 SIMPLE_JWT["AUTH_COOKIE_SAMESITE"] = "None"
 SIMPLE_JWT["AUTH_COOKIE_SECURE"] = True
-
+# Configuration Email pour Render (Port 587 bloqué, utilisation du 465 + SSL)
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "465"))
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "false").lower() == "true"
+EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "true").lower() == "true"

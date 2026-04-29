@@ -48,9 +48,11 @@ export interface Invitation {
   token: string
   project: Pick<Project, 'id' | 'name' | 'description'>
   owner: User
-  user: User
+  user_email: string
   status: InvitationStatus
   expires_at: string
+  is_logged_in: boolean
+  is_correct_user: boolean
 }
 
 export interface InvitationCreateResult {

@@ -6,6 +6,8 @@ automatique des colonnes Kanban), ajout de membres et désactivation.
 Ce service est utilisé par ProjectViewSet et doit rester découplé de la couche HTTP.
 """
 
+from django.db.models import Q
+from apps.users.models import Friendship
 from apps.project.models import Project, ProjectInvitation
 from services.column_service import create_default_columns
 from services.notification_service import send_project_invitation_email
@@ -23,26 +25,48 @@ def create_project(name, description, owner, start_date):
     create_default_columns(project)
     return project
 
-def invite_member(project, user, invited_by=None, custom_message=""):
-    """Crée une invitation pour un utilisateur et la retourne."""
-    # Vérifier si l'utilisateur est déjà membre
-    if user in project.members.all() or user == project.owner:
-        raise ValueError("L'utilisateur fait déjà partie du projet.")
+def invite_member(project, user=None, email=None, invited_by=None, custom_message=""):
+    """Crée une invitation pour un utilisateur (existant ou non) et la retourne."""
+    if user:
+        # Vérifier si l'utilisateur est déjà membre
+        if user in project.members.all() or user == project.owner:
+            raise ValueError("L'utilisateur fait déjà partie du projet.")
+        
+        # Créer ou mettre à jour l'invitation
+        invitation, created = ProjectInvitation.objects.update_or_create(
+            project=project,
+            user=user,
+            defaults={'status': 'pending', 'message': custom_message, 'email': user.email}
+        )
+    elif email:
+        # Créer ou mettre à jour l'invitation par email (utilisateur externe)
+        invitation, created = ProjectInvitation.objects.update_or_create(
+            project=project,
+            email=email,
+            defaults={'status': 'pending', 'message': custom_message}
+        )
+    else:
+        raise ValueError("Veuillez fournir un utilisateur ou un e-mail.")
     
-    # Vérifier s'il y a déjà une invitation en attente
-    invitation, created = ProjectInvitation.objects.get_or_create(
-        project=project,
-        user=user,
-        defaults={'status': 'pending'}
-    )
-    
-    if not created and invitation.status in ['accepted', 'declined']:
+    if not created:
         invitation.status = 'pending'
+        invitation.message = custom_message
+        if user:
+            invitation.email = user.email
         invitation.save()
 
-    # Envoi de l'email d'invitation
+    # Vérifier si l'utilisateur est un ami (pour sauter l'email si besoin)
+    is_friend = False
+    if invited_by and user:
+        is_friend = Friendship.objects.filter(
+            (Q(sender=invited_by, receiver=user) | Q(sender=user, receiver=invited_by)),
+            status="accepted"
+        ).exists()
+
+    # Envoi de l'email d'invitation seulement si pas ami (ou si utilisateur externe)
     email_sent = False
-    if invited_by:
+    if invited_by and not is_friend:
+        # Pour l'email, on utilise l'email de l'invitation
         email_sent = send_project_invitation_email(invitation, invited_by, custom_message)
 
     invitation._email_sent = email_sent

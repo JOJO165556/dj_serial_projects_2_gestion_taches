@@ -16,7 +16,7 @@ const routes = [
     { path: "/auth/magic", component: MagicLinkView },
     { path: "/", component: Dashboard, meta: { requiresAuth: true } },
     { path: "/kanban/:id", component: KanbanView, meta: { requiresAuth: true } },
-    { path: "/invite/:token", component: InviteView, meta: { requiresAuth: true } },
+    { path: "/invite/:token", component: InviteView },
     { path: "/profile", component: ProfileView, meta: { requiresAuth: true } },
     { path: "/friends", component: FriendsView, meta: { requiresAuth: true } },
 ];

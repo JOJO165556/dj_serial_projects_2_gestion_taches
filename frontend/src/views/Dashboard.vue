@@ -9,6 +9,8 @@ import {
   updateProject,
   deleteProject,
   addProjectMember,
+  getReceivedInvitations,
+  respondToInvitation,
 } from '@/services/kanbanService'
 import type { Project, InvitationCreateResult } from '@/types/kanban'
 
@@ -33,11 +35,34 @@ const editData = ref<Project | null>(null)
 const selectedProjectId = ref<number | null>(null)
 const submitting = ref(false)
 
-// Gestion des invitations
+// Gestion des invitations envoyées
 const inviteResult = ref<InvitationCreateResult | null>(null)
 const inviteLink = ref('')
 const inviteError = ref('')
 const myFriends = ref<Friendship[]>([])
+
+// État des invitations reçues
+const receivedInvitations = ref<any[]>([])
+
+const fetchInvitations = async () => {
+  try {
+    const res = await getReceivedInvitations()
+    receivedInvitations.value = res.data
+  } catch {}
+}
+
+const handleInvitationResponse = async (token: string, action: 'accept' | 'decline') => {
+  submitting.value = true
+  try {
+    await respondToInvitation(token, action)
+    await fetchInvitations()
+    await fetchProjects()
+  } catch (e) {
+    console.error("Erreur réponse invitation", e)
+  } finally {
+    submitting.value = false
+  }
+}
 
 // Chargement des données
 const fetchProjects = async () => {
@@ -54,6 +79,7 @@ const fetchProjects = async () => {
 
 onMounted(async () => {
   await fetchProjects()
+  await fetchInvitations()
   getFriendships().then(res => {
     myFriends.value = res.filter(f => f.status === 'accepted')
   }).catch(() => {})
@@ -169,7 +195,7 @@ const formattedFriends = computed(() => {
     const profile = f.sender.id === auth.user?.id ? f.receiver : f.sender
     return {
       ...f,
-      sender: { ...profile } // On triche un peu sur le type pour l'affichage
+      sender: { ...profile }
     }
   })
 })
@@ -177,6 +203,41 @@ const formattedFriends = computed(() => {
 
 <template>
   <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- Section Invitations Reçues -->
+    <div v-if="receivedInvitations.length" class="mb-8 space-y-3">
+      <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-1">Invitations en attente</h3>
+      <div v-for="inv in receivedInvitations" :key="inv.token" 
+           class="flex items-center justify-between p-4 bg-violet-50 dark:bg-violet-900/10 border border-violet-100 dark:border-violet-800 rounded-2xl">
+        <div class="flex items-center gap-4">
+          <div class="w-10 h-10 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-violet-600 font-bold">
+            {{ inv.owner_username.charAt(0).toUpperCase() }}
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-gray-900 dark:text-white">
+              {{ inv.owner_username }} vous invite sur <span class="text-violet-600">{{ inv.project_name }}</span>
+            </p>
+            <p v-if="inv.message" class="text-xs text-gray-500 italic mt-0.5">"{{ inv.message }}"</p>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button 
+            @click="handleInvitationResponse(inv.token, 'decline')"
+            :disabled="submitting"
+            class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-red-600 transition-colors"
+          >
+            Refuser
+          </button>
+          <button 
+            @click="handleInvitationResponse(inv.token, 'accept')"
+            :disabled="submitting"
+            class="px-4 py-1.5 text-xs font-bold bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
+          >
+            Accepter
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- En-tête -->
     <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">

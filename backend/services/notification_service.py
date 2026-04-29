@@ -15,14 +15,17 @@ def _send_email_async(email):
 
 
 def send_project_invitation_email(invitation, invited_by, custom_message=""):
-    if not invitation.user.email:
+    # On utilise l'email de l'invitation (qu'il y ait un user ou non)
+    target_email = invitation.user.email if invitation.user else invitation.email
+    if not target_email:
         return False
 
+    recipient_name = invitation.user.username if invitation.user else target_email.split('@')[0]
     invite_url = f"{settings.FRONTEND_URL}/invite/{invitation.token}"
     subject = f"Invitation a rejoindre le projet {invitation.project.name}"
 
     message_lines = [
-        f"Bonjour {invitation.user.username},",
+        f"Bonjour {recipient_name},",
         "",
         f"{invited_by.username} vous invite a rejoindre le projet '{invitation.project.name}' sur {settings.APP_NAME}.",
     ]
@@ -48,7 +51,7 @@ def send_project_invitation_email(invitation, invited_by, custom_message=""):
 
     text_body = "\n".join(message_lines)
     html_body = (
-        f"<p>Bonjour {invitation.user.username},</p>"
+        f"<p>Bonjour {recipient_name},</p>"
         f"<p><strong>{invited_by.username}</strong> vous invite a rejoindre le projet "
         f"<strong>{invitation.project.name}</strong> sur {settings.APP_NAME}.</p>"
     )
@@ -68,7 +71,7 @@ def send_project_invitation_email(invitation, invited_by, custom_message=""):
         subject=subject,
         body=text_body,
         from_email=settings.DEFAULT_FROM_EMAIL,
-        to=[invitation.user.email],
+        to=[target_email],
     )
     email.attach_alternative(html_body, "text/html")
     

@@ -9,6 +9,9 @@ export const getUsers = () =>
 export const getProjects = () =>
   api.get('projects/')
 
+export const getReceivedInvitations = () =>
+  api.get('projects/received_invitations/')
+
 export const createProject = (data: { name: string; description: string }) =>
   api.post('projects/', data)
 
@@ -18,11 +21,8 @@ export const updateProject = (id: number, data: Partial<{ name: string; descript
 export const deleteProject = (id: number) =>
   api.delete(`projects/${id}/`)
 
-export const addProjectMember = (id: number, data: { userId: number; message?: string }) =>
-  api.post(`projects/${id}/add_member/`, {
-    user_id: data.userId,
-    message: data.message ?? '',
-  })
+export const addProjectMember = (id: number, data: { user_id?: number; email?: string; message?: string }) =>
+  api.post(`projects/${id}/add_member/`, data)
 
 export const getProjectKanban = (projectId: number | string, params: Record<string, unknown> = {}) =>
   api.get(`projects/${projectId}/kanban/`, { params })

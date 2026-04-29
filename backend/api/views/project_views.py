@@ -15,7 +15,7 @@ from services.project_service import create_project, invite_member, respond_invi
 from services.kanban_service import get_full_kanban_board
 from apps.project.models import ProjectInvitation
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework import permissions
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from drf_spectacular.openapi import OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
@@ -61,6 +61,28 @@ class ProjectViewSet(ModelViewSet):
         serializer.instance = project
 
     @extend_schema(
+        summary="Lister les invitations reçues",
+        description="Retourne toutes les invitations de projet en attente pour l'utilisateur connecté.",
+        tags=["Projets"],
+    )
+    @action(detail=False, methods=["get"])
+    def received_invitations(self, request):
+        invitations = ProjectInvitation.objects.filter(
+            user=request.user,
+            status="pending"
+        ).select_related("project", "project__owner")
+        
+        data = [{
+            "token": str(inv.token),
+            "project_name": inv.project.name,
+            "owner_username": inv.project.owner.username,
+            "created_at": inv.created_at,
+            "message": inv.message
+        } for inv in invitations]
+        
+        return Response(data)
+
+    @extend_schema(
         summary="Ajouter un membre au projet",
         description="Crée une invitation pour un utilisateur via son `user_id` ou son `email` et retourne le token d'invitation.",
         tags=["Projets"],
@@ -71,6 +93,8 @@ class ProjectViewSet(ModelViewSet):
 
         user_id = request.data.get("user_id")
         email = request.data.get("email")
+        message = request.data.get("message", "")
+        user = None
         
         if user_id:
             user = User.objects.filter(id=user_id).first()
@@ -78,22 +102,23 @@ class ProjectViewSet(ModelViewSet):
             user = User.objects.filter(email=email).first()
         else:
             return Response({"error": "Veuillez fournir un user_id ou un email."}, status=400)
-            
-        if not user:
-            return Response({"error": "Utilisateur introuvable."}, status=404)
-
-        custom_message = request.data.get("message", "")
 
         try:
-            invitation = invite_member(project, user, invited_by=request.user, custom_message=custom_message)
+            invitation = invite_member(
+                project, 
+                user=user, 
+                email=email if not user else None,
+                invited_by=request.user,
+                custom_message=message
+            )
+            return Response({
+                "message": f"Invitation envoyée à {user.email if user else email}",
+                "token": str(invitation.token),
+                "email_sent": getattr(invitation, '_email_sent', False),
+                "email_error": getattr(invitation, '_email_error', None)
+            })
         except ValueError as e:
             return Response({"error": str(e)}, status=400)
-            
-        return Response({
-            "message": "Invitation créée",
-            "token": str(invitation.token),
-            "email_sent": getattr(invitation, "_email_sent", False),
-        })
 
     def perform_update(self, serializer):
         serializer.save()
@@ -126,7 +151,7 @@ class ProjectViewSet(ModelViewSet):
         return Response(response_data)
 
 class ProjectInvitationView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     @extend_schema(
         summary="Détails de l'invitation",
@@ -139,17 +164,12 @@ class ProjectInvitationView(APIView):
         except ProjectInvitation.DoesNotExist:
             return Response({"error": "Invitation introuvable"}, status=404)
 
-        if invitation.user != request.user:
-            return Response(
-                {"error": f"Cette invitation est destinée à {invitation.user.email}, mais vous êtes connecté avec le compte {request.user.email}."}, 
-                status=403
-            )
-
         # Expiration : 7 jours après création
         expires_at = invitation.created_at + timedelta(days=7)
         if timezone.now() > expires_at:
             return Response({"error": "Ce lien d'invitation a expiré (validité : 7 jours)."}, status=410)
 
+        # On renvoie les infos de base sans vérifier l'utilisateur 
         return Response({
             "token": str(invitation.token),
             "status": invitation.status,
@@ -158,17 +178,20 @@ class ProjectInvitationView(APIView):
                 "id": invitation.project.id,
                 "name": invitation.project.name,
                 "description": invitation.project.description or "",
+                "members_count": invitation.project.members.count() + 1, # +1 pour le proprio
+                "columns": [
+                    {"id": c.id, "name": c.name, "color": c.color} 
+                    for c in invitation.project.columns.all().order_by('order')
+                ]
             },
             "owner": {
                 "id": invitation.project.owner.id,
                 "username": invitation.project.owner.username,
                 "email": invitation.project.owner.email,
             },
-            "user": {
-                "id": invitation.user.id,
-                "username": invitation.user.username,
-                "email": invitation.user.email,
-            },
+            "user_email": invitation.user.email if invitation.user else invitation.email, # Email attendu pour cette invitation
+            "is_logged_in": request.user.is_authenticated,
+            "is_correct_user": request.user == invitation.user if request.user.is_authenticated else False
         })
 
     @extend_schema(
@@ -177,16 +200,30 @@ class ProjectInvitationView(APIView):
         tags=["Projets"],
     )
     def post(self, request, token):
+        if not request.user.is_authenticated:
+            return Response({"error": "Vous devez être connecté pour répondre à une invitation."}, status=401)
+
         try:
             invitation = ProjectInvitation.objects.get(token=token)
         except ProjectInvitation.DoesNotExist:
             return Response({"error": "Invitation introuvable"}, status=404)
             
-        if invitation.user != request.user:
-            return Response(
-                {"error": f"Cette invitation est destinée à {invitation.user.email}, mais vous êtes connecté avec le compte {request.user.email}."}, 
-                status=403
-            )
+        if invitation.user:
+            if invitation.user != request.user:
+                return Response(
+                    {"error": f"Cette invitation est destinée à {invitation.user.email}, mais vous êtes connecté avec le compte {request.user.email}."}, 
+                    status=403
+                )
+        else:
+            # Invitation par e-mail pur : on vérifie que l'e-mail correspond
+            if invitation.email != request.user.email:
+                return Response(
+                    {"error": f"Cette invitation est destinée à {invitation.email}, mais vous êtes connecté avec le compte {request.user.email}."}, 
+                    status=403
+                )
+            # On lie l'invitation à l'utilisateur maintenant
+            invitation.user = request.user
+            invitation.save()
             
         # Expiration : 7 jours après création
         expires_at = invitation.created_at + timedelta(days=7)
