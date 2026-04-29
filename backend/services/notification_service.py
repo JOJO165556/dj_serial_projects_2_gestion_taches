@@ -1,8 +1,17 @@
 import logging
+import threading
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 
 logger = logging.getLogger(__name__)
+
+
+def _send_email_async(email):
+    """Fonction exécutée en arrière-plan pour envoyer l'email sans bloquer l'utilisateur."""
+    try:
+        email.send(fail_silently=False)
+    except Exception as exc:
+        logger.error("Erreur lors de l'envoi asynchrone de l'email : %s", exc)
 
 
 def send_project_invitation_email(invitation, invited_by, custom_message=""):
@@ -62,11 +71,10 @@ def send_project_invitation_email(invitation, invited_by, custom_message=""):
         to=[invitation.user.email],
     )
     email.attach_alternative(html_body, "text/html")
-    try:
-        email.send(fail_silently=False)
-    except Exception as exc:
-        logger.error("Erreur envoi email invitation a %s : %s", invitation.user.email, exc)
-        return False
+    
+    # Envoi asynchrone via Thread
+    thread = threading.Thread(target=_send_email_async, args=(email,))
+    thread.start()
     return True
 
 
@@ -100,9 +108,8 @@ def send_magic_link_email(user, magic_url):
         to=[user.email],
     )
     email.attach_alternative(html_body, "text/html")
-    try:
-        email.send(fail_silently=False)
-    except Exception as exc:
-        logger.error("Erreur envoi magic link a %s : %s", user.email, exc)
-        return False
+    
+    # Envoi asynchrone via Thread
+    thread = threading.Thread(target=_send_email_async, args=(email,))
+    thread.start()
     return True

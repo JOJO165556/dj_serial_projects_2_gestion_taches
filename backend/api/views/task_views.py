@@ -13,7 +13,8 @@ from services.kanban_service import get_full_kanban_board
 from django.core.cache import cache
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-from drf_spectacular.utils import extend_schema, extend_schema_view
+from drf_spectacular.utils import extend_schema, extend_schema_view, inline_serializer
+from rest_framework import serializers
 
 from api.serializers.task_serializer import TaskSerializer, TaskReorderSerializer
 
@@ -148,6 +149,16 @@ def _broadcast_board_update(project):
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 
+@extend_schema(
+    summary="Réordonner les tâches",
+    description="Met à jour les positions et colonnes de plusieurs tâches simultanément pour synchroniser le board Kanban.",
+    request=TaskReorderSerializer,
+    responses={200: inline_serializer(
+        name='TaskReorderResponse',
+        fields={'message': serializers.CharField()}
+    )},
+    tags=["Tâches"]
+)
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
 def reorder_tasks(request):
