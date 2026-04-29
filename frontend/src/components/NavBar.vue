@@ -76,7 +76,7 @@ const confirmLogout = async () => {
             to="/profile"
             class="text-xs font-medium text-gray-600 hover:text-violet-600 dark:text-gray-300 dark:hover:text-violet-400 transition"
           >
-            {{ auth.user?.username }} (Profil)
+            Profil
           </router-link>
           <router-link
             to="/friends"
